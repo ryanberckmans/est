@@ -3,6 +3,8 @@ package main
 import (
 	"math/rand"
 	"time"
+
+	"github.com/rickar/cal"
 )
 
 /*
@@ -42,12 +44,26 @@ func monteCarloCDF(iterations int, rand *rand.Rand, historicalAccuracyRatios []f
 
 /*
 	NEXT UP
-	  f :: unsorted distribution -> unsorted business days in future
+
 	  g :: unsorted biz days in future -> percentile
 */
+// f :: unsorted distribution -> unsorted business days in future
+func futureBusinessHoursToTime(bhs []float32) []time.Time {
+	c := cal.NewCalendar()
+	// TODO add Bread office holidays, configurable vacation, etc.
+	// NEXT UP use businessHoursToDays() to convert this to business days, then use cal WorkdaysFrom(time.Now) to get the slice of Time
+	return nil
+}
 
-func businessDaysToTime([]float bds) []time.Time {
-	
+// TODO unit test
+func businessHoursToDays(h float32) int {
+	var businessHoursInAday float32 = 8.0 // TODO golang seems to want to deafult to float64, maybe we should just use float64 ya? HOw will this affect serialization?
+	d := 0
+	for h > businessHoursInAday {
+		d++
+		h -= businessHoursInAday
+	}
+	return d
 }
 
 // Return an unsorted distribution of samples
