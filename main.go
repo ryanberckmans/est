@@ -6,8 +6,29 @@ import (
 	"sort"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/rickar/cal"
 )
+
+type task struct {
+	id             uuid.UUID
+	createdAt      time.Time
+	estimatedAt    time.Time
+	estimatedHours float64
+	timeline       []time.Time // one Time per start, stop, start, stop, ... see isDone()
+	isDeleted      bool
+}
+
+func newTask() *task {
+	return &task{
+		id:        uuid.New(),
+		createdAt: time.Now(),
+	}
+}
+
+func (t *task) isDone() bool {
+	return len(t.timeline) > 0 && len(t.timeline)%2 == 0
+}
 
 /*
 // predict future predicts a cumulative density function
