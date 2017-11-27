@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
+	"sort"
 	"time"
 
 	"github.com/rickar/cal"
@@ -15,7 +17,7 @@ predict_future_cdf_helper :: [predictedTotalHoursForTasksToPredict] -> [(Complet
 */
 
 // TODO perhaps "accuracy ratio" is better than velocity. Velocity implies a unit relationship and also that faster is better. In this case 1.0 is best.
-var fakeHistoricalVelocities = []float32{
+var fakeHistoricalVelocities = []float64{
 	1.0,
 	1.3,
 	0.7,
@@ -25,13 +27,13 @@ var fakeHistoricalVelocities = []float32{
 	0.8,
 }
 
-func monteCarloCDF(iterations int, rand *rand.Rand, historicalAccuracyRatios []float32, estimatesToPredict []float32) {
+func monteCarloCDF(iterations int, rand *rand.Rand, historicalAccuracyRatios []float64, estimatesToPredict []float64) {
 }
 
 /*
 	different ways to represent samples
 
-	[float32]
+	[float64]
 
 	[Date] // where each Date has an equal chance of being the delivery date
 
@@ -48,16 +50,21 @@ func monteCarloCDF(iterations int, rand *rand.Rand, historicalAccuracyRatios []f
 	  g :: unsorted biz days in future -> percentile
 */
 // f :: unsorted distribution -> unsorted business days in future
-func futureBusinessHoursToTime(bhs []float32) []time.Time {
+// TODO unit test
+func futureBusinessHoursToTime(bhs []float64) []time.Time {
 	c := cal.NewCalendar()
 	// TODO add Bread office holidays, configurable vacation, etc.
-	// NEXT UP use businessHoursToDays() to convert this to business days, then use cal WorkdaysFrom(time.Now) to get the slice of Time
-	return nil
+	ts := make([]time.Time, len(bhs))
+	now := time.Now()
+	for i := range bhs {
+		ts[i] = c.WorkdaysFrom(now, businessHoursToDays(bhs[i]))
+	}
+	return ts
 }
 
 // TODO unit test
-func businessHoursToDays(h float32) int {
-	var businessHoursInAday float32 = 8.0 // TODO golang seems to want to deafult to float64, maybe we should just use float64 ya? HOw will this affect serialization?
+func businessHoursToDays(h float64) int {
+	businessHoursInAday := 8.0 // TODO golang seems to want to deafult to float64, maybe we should just use float64 ya? HOw will this affect serialization?
 	d := 0
 	for h > businessHoursInAday {
 		d++
@@ -67,31 +74,56 @@ func businessHoursToDays(h float32) int {
 }
 
 // Return an unsorted distribution of samples
-func sampleDistribution(iterations int, rand *rand.Rand, historicalRatios []float32, toSamples []float32) []float32 {
-	r := make([]float32, iterations)
+// TODO unit test
+func sampleDistribution(iterations int, rand *rand.Rand, historicalRatios []float64, toSamples []float64) []float64 {
+	r := make([]float64, iterations)
 	for i := 0; i < iterations; i++ {
 		r[i] = samples(rand, historicalRatios, toSamples)
 	}
 	return r
 }
 
-func samples(rand *rand.Rand, historicalRatios []float32, toSamples []float32) float32 {
-	var total float32
+// TODO unit test
+func samples(rand *rand.Rand, historicalRatios []float64, toSamples []float64) float64 {
+	var total float64
 	for _, s := range toSamples {
 		total += sample(rand, historicalRatios, s)
 	}
 	return total
 }
 
-func sample(rand *rand.Rand, historicalRatios []float32, toSample float32) float32 {
+// TODO unit test
+func sample(rand *rand.Rand, historicalRatios []float64, toSample float64) float64 {
 	return toSample / historicalRatios[rand.Intn(len(historicalRatios))]
-}
-
-func foo() {
 }
 
 func main() {
 	// rand: The default Source is safe for concurrent use by multiple goroutines, but Sources created by NewSource are not.
 	//  --> we should use default rand source
-	rand.Seed(time.Now().UnixNano())
+	// rand.Seed(time.Now().UnixNano())
+
+	toSamples := []float64{
+		4,
+		8,
+		12,
+		16,
+	}
+
+	var naiveSum float64
+	for _, v := range toSamples {
+		naiveSum += v
+	}
+
+	fmt.Printf("naive sum: %v naive end date: %v\n", naiveSum, futureBusinessHoursToTime([]float64{naiveSum}))
+
+	bhs := sampleDistribution(100, rand.New(rand.NewSource(time.Now().UnixNano())), fakeHistoricalVelocities, toSamples)
+	sort.Float64s(bhs)
+	fmt.Printf("%+v\n", bhs)
+	sampleDates := futureBusinessHoursToTime(bhs)
+	// fmt.Printf("%+v\n", )
+	fmt.Printf("  0%% %v\n", sampleDates[0])
+	fmt.Printf(" 25%% %v\n", sampleDates[24])
+	fmt.Printf(" 50%% %v\n", sampleDates[49])
+	fmt.Printf(" 75%% %v\n", sampleDates[74])
+	fmt.Printf("100%% %v\n", sampleDates[99])
 }
