@@ -57,7 +57,7 @@ func futureBusinessHoursToTime(bhs []float64) []time.Time {
 	c := cal.NewCalendar()
 	// TODO add Bread office holidays, configurable vacation, etc.
 	ts := make([]time.Time, len(bhs))
-	now := time.Now()
+	now := time.Now() // TODO inject now
 	for i := range bhs {
 		ts[i] = c.WorkdaysFrom(now, businessHoursToDays(bhs[i]))
 	}
@@ -124,6 +124,26 @@ func sample(rand *rand.Rand, historicalRatios []float64, toSample float64) float
 	return toSample / historicalRatios[rand.Intn(len(historicalRatios))]
 }
 
+func deliverySchedule(ts []task) [100]time.Time {
+	var toSamples []float64
+	for i := range ts {
+		toSamples = append(toSamples, ts[i].EstimatedHours)
+	}
+
+	// TODO ts.historicalAccuracyRatios()
+	samples := sampleDistribution(100, rand.New(rand.NewSource(time.Now().UnixNano())), fakeHistoricalVelocities, toSamples)
+
+	pct := toPercentile(samples) // after writing toPercentile(), realized that the statistical significance of the distribution may change if the iterations in sampleDistribution() differ from 100. I.e. if you do 10k iterations, then pct[99] is going to represent a 1 in 10,000 case, which isn't what the user expects. So toPercentile() isn't too useful because the percentile result model only makes sense if 1% actually means 1 in 100. I think.
+
+	timeSlice := futureBusinessHoursToTime(pct[:])
+	var timeArray [100]time.Time
+	numCopied := copy(timeArray[:], timeSlice)
+	if numCopied != 100 {
+		panic(fmt.Sprintf("expected to copy 100 elements when building time percentile, copied %d", numCopied))
+	}
+	return timeArray
+}
+
 func main() {
 	// rand: The default Source is safe for concurrent use by multiple goroutines, but Sources created by NewSource are not.
 	//  --> we should use default rand source
@@ -145,28 +165,41 @@ func main() {
 
 	fmt.Printf("estFile: %+v\n", f)
 
-	toSamples := []float64{
-		4,
-		8,
-		12,
-		16,
-	}
+	ts := f.Tasks.notDeleted().notStarted().estimated()
+	// fmt.Printf("tasks which are not deleted, not started, and have estimates: %+v\n", ts)
 
-	var naiveSum float64
-	for _, v := range toSamples {
-		naiveSum += v
-	}
+	// toSamples := []float64{
+	// 	4,
+	// 	8,
+	// 	12,
+	// 	16,
+	// }
 
-	fmt.Printf("naive sum: %v naive end date: %v\n", naiveSum, futureBusinessHoursToTime([]float64{naiveSum}))
+	// var naiveSum float64
+	// for _, v := range toSamples {
+	// 	naiveSum += v
+	// }
+	//
+	// fmt.Printf("naive sum: %v naive end date: %v\n", naiveSum, futureBusinessHoursToTime([]float64{naiveSum}))
 
-	bhs := sampleDistribution(100, rand.New(rand.NewSource(time.Now().UnixNano())), fakeHistoricalVelocities, toSamples)
-	sort.Float64s(bhs)
-	fmt.Printf("%+v\n", bhs)
-	sampleDates := futureBusinessHoursToTime(bhs)
+	// var toSamples []float64
+	// for i := range ts {
+	// 	toSamples = append(toSamples, ts[i].EstimatedHours)
+	// }
+	//
+	// bhs := sampleDistribution(100, rand.New(rand.NewSource(time.Now().UnixNano())), fakeHistoricalVelocities, toSamples)
+	//
+	// // sort.Float64s(bhs)
+	// // fmt.Printf("%+v\n", bhs)
+	// pct := toPercentile(bhs)
+	// sampleDates := futureBusinessHoursToTime(pct[:])
 	// fmt.Printf("%+v\n", )
-	fmt.Printf("  0%% %v\n", sampleDates[0])
-	fmt.Printf(" 25%% %v\n", sampleDates[24])
-	fmt.Printf(" 50%% %v\n", sampleDates[49])
-	fmt.Printf(" 75%% %v\n", sampleDates[74])
-	fmt.Printf("100%% %v\n", sampleDates[99])
+
+	sampleDates := deliverySchedule(ts)
+
+	i := 0
+	fmt.Printf("%3d%% %v\n", i+1, sampleDates[i].Format("Jan 2"))
+	for i = 4; i < 100; i += 5 {
+		fmt.Printf("%3d%% %v\n", i+1, sampleDates[i].Format("Jan 2"))
+	}
 }
