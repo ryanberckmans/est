@@ -79,26 +79,23 @@ func businessHoursToDays(h float64) int {
 // toPercentile returns ...
 func toPercentile(in []float64) [100]float64 {
 	if len(in) < 100 {
-		panic("toPercentile expected input len >= 100")
+		panic(fmt.Sprintf("toPercentile expected input len >= 100, len was %d", len(in)))
 	}
 	o := make([]float64, len(in))
 	copy(o, in)
 	sort.Float64s(o)
-	pct := 0
+	pct := 99
 	var o2 [100]float64
-	for i := range o {
-		// TODO use _last_ element which satisfies this, which means we should just build it backward. And then last o2[0] be special case instead of o2[99]. This more closely matches definition of percentile, i.e. o2[99] means 100% of data <= that value. o2 will be the special case where instead of 1 percentile it'll just be smallest value.
-		apct := 100 * i / len(o) // TODO drop variable
-		// println(apct)
-		if apct >= pct {
-			// fmt.Printf("pct %d index %d\n", pct, i)
+	// build o2 from largest to smallest values, so that as we pidgeonhole o into o2 we use the largest of each "eligbile" value for each percentile bucket, with the result that o2[i] means that (i+1)% of data <= that value.
+	for i := len(o) - 1; i > -1; i-- {
+		if 100*i/len(o) <= pct {
 			o2[pct] = o[i]
-			pct++
+			pct--
 		}
 	}
-	o2[99] = o[len(o)-1] // our algorithm will set each Nth percentile to first value which matches it, which is fine for interior percentiles. o2[0] is always o[0], so let's ensure o2[99] is always last (and largest) element of o.
-	if pct != 100 {
-		panic(fmt.Sprintf("toPercentile pct wasn't 100, it was %d", pct))
+	o2[0] = o[0] // o2[i] means that (i+1)% of data <= that value. So o2[0] means 1% of data smaller than that value, which is correct. But, as a design decision, hardcode o2[0] = o[0], so that the first and last elements of o2 are the smallest and largest elements in o, fulfilling our goal of showing full spectrum of values.
+	if pct != -1 {
+		panic(fmt.Sprintf("toPercentile pct wasn't -1, it was %d", pct))
 	}
 	return o2
 }
