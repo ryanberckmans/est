@@ -75,6 +75,34 @@ func businessHoursToDays(h float64) int {
 	return d
 }
 
+// TODO unit test
+// toPercentile returns ...
+func toPercentile(in []float64) [100]float64 {
+	if len(in) < 100 {
+		panic("toPercentile expected input len >= 100")
+	}
+	o := make([]float64, len(in))
+	copy(o, in)
+	sort.Float64s(o)
+	pct := 0
+	var o2 [100]float64
+	for i := range o {
+		// TODO use _last_ element which satisfies this, which means we should just build it backward. And then last o2[0] be special case instead of o2[99]. This more closely matches definition of percentile, i.e. o2[99] means 100% of data <= that value. o2 will be the special case where instead of 1 percentile it'll just be smallest value.
+		apct := 100 * i / len(o) // TODO drop variable
+		// println(apct)
+		if apct >= pct {
+			// fmt.Printf("pct %d index %d\n", pct, i)
+			o2[pct] = o[i]
+			pct++
+		}
+	}
+	o2[99] = o[len(o)-1] // our algorithm will set each Nth percentile to first value which matches it, which is fine for interior percentiles. o2[0] is always o[0], so let's ensure o2[99] is always last (and largest) element of o.
+	if pct != 100 {
+		panic(fmt.Sprintf("toPercentile pct wasn't 100, it was %d", pct))
+	}
+	return o2
+}
+
 // Return an unsorted distribution of samples
 // TODO unit test
 func sampleDistribution(iterations int, rand *rand.Rand, historicalRatios []float64, toSamples []float64) []float64 {
