@@ -11,7 +11,7 @@ import (
 
 type estFile struct {
 	Version                    int
-	Tasks                      []task
+	Tasks                      tasks // a type alias for []task
 	FakeEstimateAccuracyRatios []float64
 }
 
@@ -42,6 +42,17 @@ func fakeEstfile() *estFile {
 	t2.Timeline = append(t2.Timeline, time.Now().Add(-time.Hour*36))
 	t2.EstimatedHours = 4
 	t2.EstimatedAt = time.Now().Add(-time.Hour * 56)
+
+	// future tasks with estimates
+	t3 := newTask()
+	t3.EstimatedHours = 12
+	t3.EstimatedAt = time.Now().Add(-time.Hour * 56)
+	t4 := newTask()
+	t4.EstimatedHours = 16
+	t4.EstimatedAt = time.Now().Add(-time.Hour * 20)
+	t5 := newTask()
+	t5.EstimatedHours = 4.75
+	t5.EstimatedAt = time.Now().Add(-time.Hour * 20)
 	return &estFile{
 		Version: 1,
 		Tasks: []task{
@@ -50,6 +61,9 @@ func fakeEstfile() *estFile {
 			*t0,
 			*t1,
 			*t2,
+			*t3,
+			*t4,
+			*t5,
 		},
 		FakeEstimateAccuracyRatios: []float64{
 			1.0,
