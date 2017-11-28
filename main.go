@@ -1,42 +1,53 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"math/rand"
 	"os"
 	"sort"
 	"time"
 
+	"github.com/BurntSushi/toml"
 	"github.com/google/uuid"
 	"github.com/rickar/cal"
+	"github.com/spf13/viper"
 )
 
+type estFile struct {
+	Version                    int
+	Tasks                      []task
+	FakeEstimateAccuracyRatios []float64
+}
+
 type task struct {
-	id             uuid.UUID
-	createdAt      time.Time
-	estimatedAt    time.Time
-	estimatedHours float64
-	timeline       []time.Time // one Time per start, stop, start, stop, ... see isDone()
-	isDeleted      bool
+	ID             uuid.UUID
+	CreatedAt      time.Time
+	EstimatedAt    time.Time
+	EstimatedHours float64
+	Timeline       []time.Time // one Time per start, stop, start, stop, ... see isDone()
+	IsDeleted      bool
 }
 
 func newTask() *task {
 	return &task{
-		id:        uuid.New(),
-		createdAt: time.Now(),
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
 	}
 }
 
 func (t *task) isDone() bool {
-	return len(t.timeline) > 0 && len(t.timeline)%2 == 0
+	return len(t.Timeline) > 0 && len(t.Timeline)%2 == 0
 }
 
 func createFileWithDefaultContentsIfNotExists(filename string, defaultContents string) error {
-	if _, err := os.Stat(filename); !os.IsNotExist(err) {
-		// .estconfig exists, never overwrite
-		return nil
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		// no-op, filename will be created
 	} else if err != nil {
 		return err
+	} else {
+		// filename exists, never overwrite
+		return nil
 	}
 	f, err := os.Create(filename)
 	if err != nil {
@@ -135,13 +146,43 @@ func sample(rand *rand.Rand, historicalRatios []float64, toSample float64) float
 }
 
 const estConfigDefaultContents string = `
-EST_FILE=~/.estfile # Your .estfile stores your tasks and estimates. Some users may want to change this to a location with automatic backup, such as Dropbox or Google Drive.
-
-# variable/snippet to show estimate remaining in prompt
-# ask users to source ~/.estconfig in their bashrc or profile
+# Your estfile stores your tasks and estimates. Some users may want to change this to a location with automatic backup, such as Dropbox or Google Drive.
+estfile = "~/.estfile"
 `
 
-const estConfigDefaultFileName string = ".estconfig"
+const estConfigDefaultFileNameNoSuffix string = ".estconfig"
+const estConfigDefaultFileSuffix string = ".toml"
+const estConfigDefaultFileName string = estConfigDefaultFileNameNoSuffix + estConfigDefaultFileSuffix
+
+const estfileDefaultContents string = `
+[[task]]
+`
+
+func fakeEstfile() *estFile {
+	t0 := newTask()
+	t0.Timeline = append(t0.Timeline, time.Now().Add(-time.Hour*24))
+	t0.Timeline = append(t0.Timeline, time.Now())
+	t0.EstimatedHours = 6
+	t0.EstimatedAt = time.Now().Add(-time.Hour * 48)
+	t1 := newTask()
+	t1.IsDeleted = true
+	t2 := newTask()
+	t2.Timeline = append(t2.Timeline, time.Now().Add(-time.Hour*36))
+	t2.EstimatedHours = 4
+	t2.EstimatedAt = time.Now().Add(-time.Hour * 56)
+	return &estFile{
+		Version: 1,
+		Tasks: []task{
+			*newTask(),
+			*newTask(),
+			*t0,
+			*t1,
+			*t2,
+		},
+		FakeEstimateAccuracyRatios: fakeHistoricalVelocities,
+	}
+
+}
 
 func main() {
 	// rand: The default Source is safe for concurrent use by multiple goroutines, but Sources created by NewSource are not.
@@ -149,9 +190,26 @@ func main() {
 	// rand.Seed(time.Now().UnixNano())
 
 	if err := createFileWithDefaultContentsIfNotExists(os.Getenv("HOME")+"/"+estConfigDefaultFileName, estConfigDefaultContents); err != nil {
-		fmt.Printf("fatal: couldn't find or create .estconfig: %v\n", err)
+		fmt.Printf("fatal: couldn't find or create %s: %s\n", estConfigDefaultFileName, err)
 		return
 	}
+
+	viper.SetConfigName(estConfigDefaultFileNameNoSuffix) // .toml suffix discovered automatically
+	viper.AddConfigPath("$HOME")
+	err := viper.ReadInConfig() // Find and read the config file
+	if err != nil {             // Handle errors reading the config file
+		fmt.Printf("fatal: %s\n", err)
+	}
+
+	fmt.Printf("viper get %v", viper.Get("estfile"))
+
+	println("begin")
+	buf := new(bytes.Buffer)
+	fmt.Println(buf.String())
+	if err := toml.NewEncoder(os.Stdout).Encode(*fakeEstfile()); err != nil {
+		panic(err)
+	}
+	println("end")
 
 	toSamples := []float64{
 		4,
