@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"sort"
 	"time"
 
@@ -28,6 +29,21 @@ func newTask() *task {
 
 func (t *task) isDone() bool {
 	return len(t.timeline) > 0 && len(t.timeline)%2 == 0
+}
+
+func createFileWithDefaultContentsIfNotExists(filename string, defaultContents string) error {
+	if _, err := os.Stat(filename); !os.IsNotExist(err) {
+		// .estconfig exists, never overwrite
+		return nil
+	} else if err != nil {
+		return err
+	}
+	f, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	_, err = f.Write([]byte(defaultContents))
+	return err
 }
 
 /*
@@ -118,10 +134,24 @@ func sample(rand *rand.Rand, historicalRatios []float64, toSample float64) float
 	return toSample / historicalRatios[rand.Intn(len(historicalRatios))]
 }
 
+const estConfigDefaultContents string = `
+EST_FILE=~/.estfile # Your .estfile stores your tasks and estimates. Some users may want to change this to a location with automatic backup, such as Dropbox or Google Drive.
+
+# variable/snippet to show estimate remaining in prompt
+# ask users to source ~/.estconfig in their bashrc or profile
+`
+
+const estConfigDefaultFileName string = ".estconfig"
+
 func main() {
 	// rand: The default Source is safe for concurrent use by multiple goroutines, but Sources created by NewSource are not.
 	//  --> we should use default rand source
 	// rand.Seed(time.Now().UnixNano())
+
+	if err := createFileWithDefaultContentsIfNotExists(os.Getenv("HOME")+"/"+estConfigDefaultFileName, estConfigDefaultContents); err != nil {
+		fmt.Printf("fatal: couldn't find or create .estconfig: %v\n", err)
+		return
+	}
 
 	toSamples := []float64{
 		4,
