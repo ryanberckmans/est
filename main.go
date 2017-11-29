@@ -134,16 +134,15 @@ func renderDeliverySchedule(dates [100]time.Time) string {
 	return strings.Join(ss[:], "\n") + "\n"
 }
 
-func deliverySchedule(ts []task) [100]time.Time {
+func deliverySchedule(historicalEstimateAccuracyRatios []float64, ts []task) [100]time.Time {
 	var toSamples []float64
 	for i := range ts {
-		toSamples = append(toSamples, ts[i].EstimatedHours)
+		toSamples = append(toSamples, ts[i].estimatedHours())
 	}
 
-	// TODO ts.historicalAccuracyRatios()
-	samples := sampleDistribution(100, rand.New(rand.NewSource(time.Now().UnixNano())), fakeHistoricalVelocities, toSamples)
+	samples := sampleDistribution(100, rand.New(rand.NewSource(time.Now().UnixNano())), historicalEstimateAccuracyRatios, toSamples)
 
-	pct := toPercentile(samples) // after writing toPercentile(), realized that the statistical significance of the distribution may change if the iterations in sampleDistribution() differ from 100. I.e. if you do 10k iterations, then pct[99] is going to represent a 1 in 10,000 case, which isn't what the user expects. So toPercentile() isn't too useful because the percentile result model only makes sense if 1% actually means 1 in 100. I think.
+	pct := toPercentile(samples) // after writing toPercentile(), realized that the statistical significance of the distribution may change if the iterations in sampleDistribution() differ from 100. I.e. if you do 10k iterations, then pct[99] is going to represent a 1 in 10,000 case, which isn't what the user expects. So toPercentile() isn't too useful because the percentile result model only makes sense if 1% actually means 1 in 100. Right?
 
 	timeSlice := futureBusinessHoursToTime(pct[:])
 	var timeArray [100]time.Time
@@ -167,16 +166,16 @@ func main() {
 
 	fmt.Printf("estConfig: %+v\n", c)
 
-	f, err := getEstFile(strings.Replace(c.Estfile, "$HOME", os.Getenv("HOME"), -1)) // TODO support replacement of any env
+	ef, err := getEstFile(strings.Replace(c.Estfile, "$HOME", os.Getenv("HOME"), -1)) // TODO support replacement of any env
 	if err != nil {
 		fmt.Printf("fatal: %s", err)
 		return
 	}
 
-	fmt.Printf("estFile: %+v\n", f)
+	fmt.Printf("estFile: %+v\n", ef)
 
-	ts := f.Tasks.notDeleted().notStarted().estimated()
-	dates := deliverySchedule(ts)
+	ts := ef.Tasks.notDeleted().estimated().notDone()
+	dates := deliverySchedule(ef.historicalEstimateAccuracyRatios(), ts)
 
 	fmt.Print(renderDeliverySchedule(dates))
 }
