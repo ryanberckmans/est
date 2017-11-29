@@ -124,6 +124,16 @@ func sample(rand *rand.Rand, historicalRatios []float64, toSample float64) float
 	return toSample / historicalRatios[rand.Intn(len(historicalRatios))]
 }
 
+func renderDeliverySchedule(dates [100]time.Time) string {
+	var ss [21]string
+	ss[0] = fmt.Sprintf("%3d%% %s", 0, dates[0].Format("Jan 2"))
+	for i := 1; i < 21; i++ {
+		j := i*5 - 1
+		ss[i] = fmt.Sprintf("%3d%% %s", j+1, dates[j].Format("Jan 2"))
+	}
+	return strings.Join(ss[:], "\n") + "\n"
+}
+
 func deliverySchedule(ts []task) [100]time.Time {
 	var toSamples []float64
 	for i := range ts {
@@ -166,40 +176,7 @@ func main() {
 	fmt.Printf("estFile: %+v\n", f)
 
 	ts := f.Tasks.notDeleted().notStarted().estimated()
-	// fmt.Printf("tasks which are not deleted, not started, and have estimates: %+v\n", ts)
+	dates := deliverySchedule(ts)
 
-	// toSamples := []float64{
-	// 	4,
-	// 	8,
-	// 	12,
-	// 	16,
-	// }
-
-	// var naiveSum float64
-	// for _, v := range toSamples {
-	// 	naiveSum += v
-	// }
-	//
-	// fmt.Printf("naive sum: %v naive end date: %v\n", naiveSum, futureBusinessHoursToTime([]float64{naiveSum}))
-
-	// var toSamples []float64
-	// for i := range ts {
-	// 	toSamples = append(toSamples, ts[i].EstimatedHours)
-	// }
-	//
-	// bhs := sampleDistribution(100, rand.New(rand.NewSource(time.Now().UnixNano())), fakeHistoricalVelocities, toSamples)
-	//
-	// // sort.Float64s(bhs)
-	// // fmt.Printf("%+v\n", bhs)
-	// pct := toPercentile(bhs)
-	// sampleDates := futureBusinessHoursToTime(pct[:])
-	// fmt.Printf("%+v\n", )
-
-	sampleDates := deliverySchedule(ts)
-
-	i := 0
-	fmt.Printf("%3d%% %v\n", i+1, sampleDates[i].Format("Jan 2"))
-	for i = 4; i < 100; i += 5 {
-		fmt.Printf("%3d%% %v\n", i+1, sampleDates[i].Format("Jan 2"))
-	}
+	fmt.Print(renderDeliverySchedule(dates))
 }
