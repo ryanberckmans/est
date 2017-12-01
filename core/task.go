@@ -134,6 +134,12 @@ func (ts tasks) Started() tasks {
 	})
 }
 
+func (ts tasks) NotStarted() tasks {
+	return filterTasks(ts, func(t *Task) bool {
+		return !t.IsStarted()
+	})
+}
+
 func (ts tasks) SortByStartedAtDescending() tasks {
 	sort.Sort(sortByStartedAtDescending(ts))
 	return ts

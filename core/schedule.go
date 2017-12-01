@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func renderDeliverySchedule(dates [100]time.Time) string {
+func RenderDeliverySchedule(dates [100]time.Time) string {
 	var ss [21]string
 	ss[0] = fmt.Sprintf("%3d%% %s", 0, dates[0].Format("Jan 2"))
 	for i := 1; i < 21; i++ {
@@ -17,7 +17,7 @@ func renderDeliverySchedule(dates [100]time.Time) string {
 	return strings.Join(ss[:], "\n") + "\n"
 }
 
-func deliverySchedule(historicalEstimateAccuracyRatios []float64, ts []Task) [100]time.Time {
+func DeliverySchedule(historicalEstimateAccuracyRatios []float64, ts []Task) [100]time.Time {
 	var toSamples []float64
 	for i := range ts {
 		toSamples = append(toSamples, ts[i].EstimatedHours())

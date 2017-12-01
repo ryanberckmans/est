@@ -25,7 +25,7 @@ type EstFile struct {
 // historicalEstimateAccuracyRatios returns the accuracy ratios for historical tasks
 // in this EstFile. Our definition of historical are tasks which are done and not
 // deleted. This returned []float64 is the "evidence" in "evidence-based scheduling".
-func (ef EstFile) historicalEstimateAccuracyRatios() []float64 {
+func (ef EstFile) HistoricalEstimateAccuracyRatios() []float64 {
 	/*
 		TODO there is an argument to weight outcomes by magnitude of task estimate: larger estimates are often more important to a business and harder to get right. If an estimator's history was 90% accurate, but tasks which were estimated accurately are the smallest 90%, then it seems this estimator's history is less accurate than, say, someone who gets large estimates mostly accurate.
 
