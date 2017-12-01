@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"strings"
+
+	"github.com/ryanberckmans/est/core"
 )
 
 const ansiReset = "\033[0m"
@@ -11,12 +13,16 @@ const ansiDangerOrange = "\033[38;5;202m" // color 202 of 256
 
 const promptNoTasksStarted = ansiDangerOrange + "no tasks started      " + ansiReset
 
+// When the prompt cannot be displayed, provide a default prompt
+// which will cause minimal disruption to the user's prompt.
+const promptFailed = ansiDangerOrange + "est-prompt failed     " + ansiReset
+
 // renderPrompt renders a summary of passed tasks, such that returned string is
 // suitable to be used as part of a shell prompt.
 // The rendering aims to be minimally distracting by being fixed width, commas always
 // in same char position, and same color; and maximally useful, currently by showing
 // an adaptive short form of task names.
-func renderPrompt(ts []task) string {
+func renderPrompt(ts []core.Task) string {
 	switch len(ts) {
 	case 0:
 		return promptNoTasksStarted
@@ -33,7 +39,7 @@ func promptColor(s string) string {
 	return ansiReset + ansiBoldMagenta + s + ansiReset
 }
 
-func promptOneTask(t task) string {
+func promptOneTask(t core.Task) string {
 	s := getTaskNameForPrompt(t)
 	if len(s) > 22 {
 		return s[:22]
@@ -41,20 +47,20 @@ func promptOneTask(t task) string {
 	return fmt.Sprintf("%-22s", s)
 }
 
-func promptTwoTasks(t task, t2 task) string {
+func promptTwoTasks(t core.Task, t2 core.Task) string {
 	s := stringsShortForm(5, 10, strings.Fields(getTaskNameForPrompt(t)))
 	s2 := stringsShortForm(5, 10, strings.Fields(getTaskNameForPrompt(t2)))
 	return fmt.Sprintf("%10s, %-10s", s, s2)
 }
 
 // fixed width relies on len(ts) < 9, i.e. no more than 12 tasks in progress.
-func promptNTasks(t task, t2 task, t3 task, ts []task) string {
+func promptNTasks(t core.Task, t2 core.Task, t3 core.Task, ts []core.Task) string {
 	s := stringsShortForm(5, 10, strings.Fields(getTaskNameForPrompt(t)))
 	s2 := stringsShortForm(4, 8, strings.Fields(getTaskNameForPrompt(t2)))
 	return fmt.Sprintf("%10s, %-8s+%d", s, s2, 1+len(ts))
 }
 
-func getTaskNameForPrompt(t task) string {
+func getTaskNameForPrompt(t core.Task) string {
 	// TODO t.ShortName is used if non-empty; maybe t.Summary instead; or t.Tags
 	return t.Name
 }

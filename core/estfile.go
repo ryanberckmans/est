@@ -1,4 +1,4 @@
-package main
+package core
 
 import (
 	"bytes"
@@ -10,19 +10,22 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-type estFile struct {
-	// TODO unexported dirty bool determines if estFile is written back
+// EstFile is the database for est. An estfile often corresponds
+// to one user's historical activity in est.
+// A loaded .estfile is deserialized into this struct.
+type EstFile struct {
+	// TODO unexported dirty bool determines if EstFile is written back
 	Version int   // future use, to migrate old estfiles
 	Tasks   tasks // a type alias for []task
 	// Fake ratios, see historicalEstimateAccuracyRatios().
-	// Fake ratios are saved to estFile so they are stable.
+	// Fake ratios are saved to EstFile so they are stable.
 	FakeHistoricalEstimateAccuracyRatios []float64
 }
 
 // historicalEstimateAccuracyRatios returns the accuracy ratios for historical tasks
-// in this estFile. Our definition of historical are tasks which are done and not
+// in this EstFile. Our definition of historical are tasks which are done and not
 // deleted. This returned []float64 is the "evidence" in "evidence-based scheduling".
-func (ef estFile) historicalEstimateAccuracyRatios() []float64 {
+func (ef EstFile) historicalEstimateAccuracyRatios() []float64 {
 	/*
 		TODO there is an argument to weight outcomes by magnitude of task estimate: larger estimates are often more important to a business and harder to get right. If an estimator's history was 90% accurate, but tasks which were estimated accurately are the smallest 90%, then it seems this estimator's history is less accurate than, say, someone who gets large estimates mostly accurate.
 
@@ -39,10 +42,10 @@ func (ef estFile) historicalEstimateAccuracyRatios() []float64 {
 
 		Another argument is to match historical accuracy ratios of a certain size with future task estimates of a certain size. If an estimator is good or bad at estimating small tasks, let that reflect in small task predictions, and same for large. To impl this, we might use historicalEstimateAccuracyRatios :: [(EstimatedHours, Ratio)], so that downstream is able to weigh ratios with knowledge of the size of their estimates.
 	*/
-	ts := ef.Tasks.notDeleted().done()
+	ts := ef.Tasks.NotDeleted().Done()
 	ars := make([]float64, len(ts))
 	for i := range ts {
-		ars[i] = ts[i].estimateAccuracyRatio()
+		ars[i] = ts[i].EstimateAccuracyRatio()
 	}
 
 	// If real evidence is scarce, pad with fake ratios, which are expected to be fairly random, displaying a conservative lack of confidence in the estimating ability of our estimator.
@@ -52,90 +55,90 @@ func (ef estFile) historicalEstimateAccuracyRatios() []float64 {
 	return ars
 }
 
-func getEstFile(estFileName string) (estFile, error) {
+func getEstFile(estFileName string) (EstFile, error) {
 	if err := createFileWithDefaultContentsIfNotExists(estFileName, fakeEstfileContents()); err != nil {
-		return estFile{}, fmt.Errorf("couldn't find or create %s: %s", estFileName, err)
+		return EstFile{}, fmt.Errorf("couldn't find or create %s: %s", estFileName, err)
 	}
 
 	d, err := ioutil.ReadFile(estFileName)
 	if err != nil {
-		return estFile{}, err
+		return EstFile{}, err
 	}
 
-	ef := estFile{}
+	ef := EstFile{}
 	_, err = toml.Decode(string(d), &ef)
 	return ef, err
 }
 
-func fakeEstfile() *estFile {
+func fakeEstfile() *EstFile {
 	// Done task
-	t0 := newTask()
+	t0 := NewTask()
 	t0.Hours = []float64{6.0, 9.2}
 	t0.Name = "organize imports in math.go"
 	// t0.ShortName = "math.go imports"
-	if !t0.isDone() {
+	if !t0.IsDone() {
 		panic("done task wasn't done")
 	}
 	// Deleted task
-	t1 := newTask()
+	t1 := NewTask()
 	t1.Name = "this task was deleted"
 	t1.IsDeleted = true
 	// Started task
-	t2 := newTask()
+	t2 := NewTask()
 	t2.Hours = []float64{4.0}
 	t2.StartedAt = time.Now()
 	t2.Name = "optimize monte carlo functions"
-	if !t2.isStarted() {
+	if !t2.IsStarted() {
 		panic("started task wasn't started")
 	}
 	// Estimated tasks
-	t3 := newTask()
+	t3 := NewTask()
 	t3.Hours = []float64{12}
 	t3.Name = "impl est-rm"
-	if !t3.isEstimated() || t3.isStarted() {
+	if !t3.IsEstimated() || t3.IsStarted() {
 		panic("estimated task wasn't estimated or is started")
 	}
-	t4 := newTask()
+	t4 := NewTask()
 	t4.Hours = []float64{16}
 	t4.Name = "design shared predicted schedule for a team sharing estfiles"
 	// t4.ShortName = "team schedule"
-	if !t4.isEstimated() || t4.isStarted() {
+	if !t4.IsEstimated() || t4.IsStarted() {
 		panic("estimated task wasn't estimated or is started")
 	}
-	t5 := newTask()
+	t5 := NewTask()
 	t5.Hours = []float64{4.75}
 	t5.Name = "#5 task"
-	if !t5.isEstimated() || t5.isStarted() {
+	if !t5.IsEstimated() || t5.IsStarted() {
 		panic("estimated task wasn't estimated or is started")
 	}
 	// More done tasks
-	t6 := newTask()
+	t6 := NewTask()
 	t6.Hours = []float64{3.0, 3.1}
 	t6.Name = "#6 task"
-	if !t6.isDone() {
+	if !t6.IsDone() {
 		panic("done task wasn't done")
 	}
-	t7 := newTask()
+	t7 := NewTask()
 	t7.Hours = []float64{8.0, 12.0}
 	t7.Name = "#7 task"
-	if !t7.isDone() {
+	if !t7.IsDone() {
 		panic("done task wasn't done")
 	}
-	t8 := newTask()
+	t8 := NewTask()
 	t8.Hours = []float64{0.5, 2}
 	t8.Name = "#8 task"
-	if !t8.isDone() {
+	if !t8.IsDone() {
 		panic("done task wasn't done")
 	}
-	t9 := newTask()
+	t9 := NewTask()
 	t9.Hours = []float64{8.0, 6.5}
 	t9.Name = "#9 task"
-	if !t9.isDone() {
+	if !t9.IsDone() {
 		panic("done task wasn't done")
 	}
-	return &estFile{
+	return &EstFile{
 		Version: 1,
-		Tasks: []task{
+		Tasks: []Task{
 			*t0,
 			*t1,
 			*t2,

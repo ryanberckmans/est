@@ -1,4 +1,4 @@
-package main
+package core
 
 import (
 	"fmt"
@@ -61,24 +61,24 @@ func toPercentile(in []float64) [100]float64 {
 
 // Return an unsorted distribution of samples
 // TODO unit test
-func sampleDistribution(iterations int, rand *rand.Rand, historicalRatios []float64, toSamples []float64) []float64 {
+func sampleDistribution(iterations int, rd *rand.Rand, historicalRatios []float64, toSamples []float64) []float64 {
 	r := make([]float64, iterations)
 	for i := 0; i < iterations; i++ {
-		r[i] = samples(rand, historicalRatios, toSamples)
+		r[i] = samples(rd, historicalRatios, toSamples)
 	}
 	return r
 }
 
 // TODO unit test
-func samples(rand *rand.Rand, historicalRatios []float64, toSamples []float64) float64 {
+func samples(rd *rand.Rand, historicalRatios []float64, toSamples []float64) float64 {
 	var total float64
 	for _, s := range toSamples {
-		total += sample(rand, historicalRatios, s)
+		total += sample(rd, historicalRatios, s)
 	}
 	return total
 }
 
 // TODO unit test
-func sample(rand *rand.Rand, historicalRatios []float64, toSample float64) float64 {
-	return toSample / historicalRatios[rand.Intn(len(historicalRatios))]
+func sample(rd *rand.Rand, historicalRatios []float64, toSample float64) float64 {
+	return toSample / historicalRatios[rd.Intn(len(historicalRatios))]
 }

@@ -1,15 +1,19 @@
-package main
+package core
 
 import (
 	"math"
+	"sort"
 	"time"
 
 	"github.com/google/uuid"
 )
 
-type tasks []task
+type tasks []Task
 
-type task struct {
+// Task is the unit of estimation for est.
+// Users estimate and do tasks, and then est predicts future tasks' delivery schedule.
+// A task is the same thing as a story, feature, bug, etc.
+type Task struct {
 	// TODO do we want to allow tasks to be created without estimates? is this a backlog tool, then, too? I can see this being really useful, you have 4 tasks, want to record them all, and not yet sure what estimate will be for last one, because it depends on formers.
 	/*
 		Ideas
@@ -28,8 +32,8 @@ type task struct {
 	IsDeleted bool
 }
 
-func newTask() *task {
-	return &task{
+func NewTask() *Task {
+	return &Task{
 		ID:        uuid.New(),
 		CreatedAt: time.Now(),
 	}
@@ -37,20 +41,20 @@ func newTask() *task {
 
 // TODO setting task name should trim whitespace and have a maximum name length. same for shortname.
 
-// start this task, panicking if this would create illegal state.
-func (t *task) start(now time.Time) {
-	if !t.isEstimated() {
+// Start this task, panicking if this would create illegal state.
+func (t *Task) Start(now time.Time) {
+	if !t.IsEstimated() {
 		panic("cannot start unestimated task") // an error would be better if this were a library
 	}
-	if t.isStarted() {
+	if t.IsStarted() {
 		panic("cannot start task which is already started")
 	}
 	t.StartedAt = now
 }
 
-// stop this task, panicking if this would create illegal state.
-func (t *task) stop(now time.Time) {
-	if !t.isStarted() {
+// Stop this task, panicking if this would create illegal state.
+func (t *Task) Stop(now time.Time) {
+	if !t.IsStarted() {
 		panic("cannot stop task which is unstarted")
 	}
 	elapsed := math.Max(now.Sub(t.StartedAt).Hours(), 0) // disallow negative elapsed, which is philosophically interesting but produces invalid accuracy ratios.
@@ -58,27 +62,27 @@ func (t *task) stop(now time.Time) {
 	t.StartedAt = time.Time{}
 }
 
-func (t *task) isEstimated() bool {
+func (t *Task) IsEstimated() bool {
 	return len(t.Hours) > 0
 }
 
-func (t *task) isStarted() bool {
-	return t.isEstimated() && !t.StartedAt.IsZero()
+func (t *Task) IsStarted() bool {
+	return t.IsEstimated() && !t.StartedAt.IsZero()
 }
 
-func (t *task) isDone() bool {
+func (t *Task) IsDone() bool {
 	return len(t.Hours) > 1 && t.StartedAt.IsZero()
 }
 
-func (t *task) estimatedHours() float64 {
+func (t *Task) EstimatedHours() float64 {
 	if len(t.Hours) < 1 {
 		return 0
 	}
 	return t.Hours[0]
 }
 
-// actualHours is the sum of elapsed time spent on this task for start-stop intervals.
-func (t *task) actualHours() float64 {
+// ActualHours is the sum of elapsed time spent on this task for start-stop intervals.
+func (t *Task) ActualHours() float64 {
 	if len(t.Hours) < 2 {
 		return 0
 	}
@@ -89,50 +93,75 @@ func (t *task) actualHours() float64 {
 	return hours
 }
 
-// estimateAccuracyRatio returns a ratio of estimate / actual hours for a done task.
+// EstimateAccuracyRatio returns a ratio of estimate / actual hours for a done task.
 // I.e. 1.0 is perfect estimate, 2.0 means task was twice as fast, 0.5 task twice as long.
-func (t *task) estimateAccuracyRatio() float64 {
+func (t *Task) EstimateAccuracyRatio() float64 {
 	if len(t.Hours) < 2 {
 		// we need an estimate and elapsed time to calculate accuracy ratio
 		return 0
 	}
 	// It's possible this task isStarted(), but we'll allow computing accuracy ratio on a previously-done task which was restarted, because it's simple and may be useful
-	return t.estimatedHours() / t.actualHours()
+	return t.EstimatedHours() / t.ActualHours()
 }
 
-func (ts tasks) notDeleted() tasks {
-	return filterTasks(ts, func(t *task) bool {
+func (ts tasks) NotDeleted() tasks {
+	return filterTasks(ts, func(t *Task) bool {
 		return !t.IsDeleted
 	})
 }
 
-func (ts tasks) done() tasks {
-	return filterTasks(ts, func(t *task) bool {
-		return t.isDone()
+func (ts tasks) Done() tasks {
+	return filterTasks(ts, func(t *Task) bool {
+		return t.IsDone()
 	})
 }
 
-func (ts tasks) notDone() tasks {
-	return filterTasks(ts, func(t *task) bool {
-		return !t.isDone()
+func (ts tasks) NotDone() tasks {
+	return filterTasks(ts, func(t *Task) bool {
+		return !t.IsDone()
 	})
 }
 
-func (ts tasks) estimated() tasks {
-	return filterTasks(ts, func(t *task) bool {
-		return t.isEstimated()
+func (ts tasks) Estimated() tasks {
+	return filterTasks(ts, func(t *Task) bool {
+		return t.IsEstimated()
 	})
 }
 
-func filterTasks(ts []task, fn func(t *task) bool) []task {
+func (ts tasks) Started() tasks {
+	return filterTasks(ts, func(t *Task) bool {
+		return t.IsStarted()
+	})
+}
+
+func (ts tasks) SortByStartedAtDescending() tasks {
+	sort.Sort(sortByStartedAtDescending(ts))
+	return ts
+}
+
+func filterTasks(ts []Task, fn func(t *Task) bool) []Task {
 	if ts == nil {
 		return nil
 	}
-	var res []task
+	var res []Task
 	for i := range ts {
 		if fn(&ts[i]) {
 			res = append(res, ts[i])
 		}
 	}
 	return res
+}
+
+type sortByStartedAtDescending tasks
+
+func (ts sortByStartedAtDescending) Len() int {
+	return len(ts)
+}
+func (ts sortByStartedAtDescending) Less(i, j int) bool {
+	return ts[i].StartedAt.After(ts[j].StartedAt)
+}
+func (ts sortByStartedAtDescending) Swap(i, j int) {
+	tmp := ts[j]
+	ts[j] = ts[i]
+	ts[i] = tmp
 }
