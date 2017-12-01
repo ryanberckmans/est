@@ -23,6 +23,7 @@ type task struct {
 	Name      string
 	CreatedAt time.Time
 	StartedAt time.Time // If len(Hours) is 0, StartedAt is undefined, because an unestimated task cannot be started. (I.e. StartedAt is not orthogonal to Hours). Otherwise, this task is unstarted iff StartedAt.IsZero(), else this task is in progress as of StartedAt.
+	// TODO DoneAt ?? not used for math but for backlog purposes. Maybe a simple event log. But, if DoneAt is buried in event log, will make it more difficult to sort by doneAt.
 	Hours     []float64 // Hours[0] is the estimate for this task. [1] is time elapsed between initial start/stop. [N] is subsequent starts/stops. An alternative to `Hours []float64` is `Durations []time.Duration`, however our monte carlo algorithms use float64 and hours is easier to read in raw estfile.
 	IsDeleted bool
 }
@@ -33,6 +34,8 @@ func newTask() *task {
 		CreatedAt: time.Now(),
 	}
 }
+
+// TODO setting task name should trim whitespace and have a maximum name length. same for shortname.
 
 // start this task, panicking if this would create illegal state.
 func (t *task) start(now time.Time) {

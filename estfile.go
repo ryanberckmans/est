@@ -11,6 +11,7 @@ import (
 )
 
 type estFile struct {
+	// TODO unexported dirty bool determines if estFile is written back
 	Version int   // future use, to migrate old estfiles
 	Tasks   tasks // a type alias for []task
 	// Fake ratios, see historicalEstimateAccuracyRatios().
@@ -27,7 +28,7 @@ func (ef estFile) historicalEstimateAccuracyRatios() []float64 {
 
 		Another arguement is that if all estimates are created equal, then the estimator has an incentive to break things down into smaller tasks which are easier to estimate. This seems a nice mechanism, but I wonder if it discourages folks from including "fuzzy work", such as research, in task definitions. E.g. if I spend N hours learning and planning so that I can then perfectly estimate a 2 hour task, am I really succeeding at improving my estimates and collecting evidence of historical estimates to predict future delivery dates? If N is untracked, large, or variable, then it seems I am not succeeding.
 
-		My current bias is to try giving larger estimators more predictive weight. How could this be done? Ideas:
+		My current bias is to try giving larger estimates more predictive weight. How could this be done? Ideas:
 
 		1. the probability that a task is included in historical ratios is proportional to its estimate size, then smaller tasks have a larger chance of being excluded.
 
@@ -35,6 +36,8 @@ func (ef estFile) historicalEstimateAccuracyRatios() []float64 {
 
 		3. use both (1) and (2). Then larger tasks would constitute a larger portion of ratio sample, and also larger tasks, being less normalized towards 1.0, would be increasingly responsible for predicted imperfect schedule.
 			--> impl note, today FakeHistoricalEstimateAccuracyRatios are padded after real ones are calculated, but we probably don't want to pad with fakes after real ones are dropped due to sampling in (1). We probably want something like `sampledTasks, droppedTasks = sampleHistory(ef.Tasks); if sampledTasks < 20 pad with droppedTasks` and then only pad fakes at very end.
+
+		Another argument is to match historical accuracy ratios of a certain size with future task estimates of a certain size. If an estimator is good or bad at estimating small tasks, let that reflect in small task predictions, and same for large. To impl this, we might use historicalEstimateAccuracyRatios :: [(EstimatedHours, Ratio)], so that downstream is able to weigh ratios with knowledge of the size of their estimates.
 	*/
 	ts := ef.Tasks.notDeleted().done()
 	ars := make([]float64, len(ts))

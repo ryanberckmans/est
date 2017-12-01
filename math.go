@@ -9,6 +9,9 @@ import (
 	"github.com/rickar/cal"
 )
 
+// TODO probability mass function = pmf :: []Date -> map[Date]float64 s.t. 0 <= pmf(ds)[i] <= 1 && sum_i pmf(ds)[i] == 1   --> or, type DateChance struct, []DateChance
+// TODO probability density function
+
 // TODO unit test
 func futureBusinessHoursToTime(bhs []float64) []time.Time {
 	c := cal.NewCalendar()
