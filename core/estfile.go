@@ -86,7 +86,7 @@ func fakeEstfile() *EstFile {
 	// Started task
 	t2 := NewTask()
 	t2.Hours = []float64{4.0}
-	t2.StartedAt = time.Now()
+	t2.StartedAt = time.Now().Add(-time.Minute)
 	t2.Name = "optimize monte carlo functions"
 	if !t2.IsStarted() {
 		panic("started task wasn't started")
@@ -136,6 +136,21 @@ func fakeEstfile() *EstFile {
 	if !t9.IsDone() {
 		panic("done task wasn't done")
 	}
+	// More started tasks
+	t10 := NewTask()
+	t10.Hours = []float64{13.0}
+	t10.StartedAt = time.Now().Add(-time.Second)
+	t10.Name = "fix dbl error"
+	if !t10.IsStarted() {
+		panic("started task wasn't started")
+	}
+	t11 := NewTask()
+	t11.Hours = []float64{13.0}
+	t11.StartedAt = time.Now().Add(-time.Second * 2)
+	t11.Name = "prob. mass fn"
+	if !t11.IsStarted() {
+		panic("started task wasn't started")
+	}
 	return &EstFile{
 		Version: 1,
 		Tasks: []Task{
@@ -149,6 +164,8 @@ func fakeEstfile() *EstFile {
 			*t7,
 			*t8,
 			*t9,
+			*t10,
+			*t11,
 		},
 		FakeHistoricalEstimateAccuracyRatios: makeFakeHistoricalEstimateAccuracyRatios(),
 	}
