@@ -68,61 +68,71 @@ func fakeEstfile() *estFile {
 	// Done task
 	t0 := newTask()
 	t0.Hours = []float64{6.0, 9.2}
+	t0.Name = "organize imports in math.go"
+	// t0.ShortName = "math.go imports"
 	if !t0.isDone() {
 		panic("done task wasn't done")
 	}
 	// Deleted task
 	t1 := newTask()
+	t1.Name = "this task was deleted"
 	t1.IsDeleted = true
 	// Started task
 	t2 := newTask()
 	t2.Hours = []float64{4.0}
 	t2.StartedAt = time.Now()
+	t2.Name = "optimize monte carlo functions"
 	if !t2.isStarted() {
 		panic("started task wasn't started")
 	}
 	// Estimated tasks
 	t3 := newTask()
 	t3.Hours = []float64{12}
+	t3.Name = "impl est-rm"
 	if !t3.isEstimated() || t3.isStarted() {
 		panic("estimated task wasn't estimated or is started")
 	}
 	t4 := newTask()
 	t4.Hours = []float64{16}
+	t4.Name = "design shared predicted schedule for a team sharing estfiles"
+	// t4.ShortName = "team schedule"
 	if !t4.isEstimated() || t4.isStarted() {
 		panic("estimated task wasn't estimated or is started")
 	}
 	t5 := newTask()
 	t5.Hours = []float64{4.75}
+	t5.Name = "#5 task"
 	if !t5.isEstimated() || t5.isStarted() {
 		panic("estimated task wasn't estimated or is started")
 	}
 	// More done tasks
 	t6 := newTask()
 	t6.Hours = []float64{3.0, 3.1}
+	t6.Name = "#6 task"
 	if !t6.isDone() {
 		panic("done task wasn't done")
 	}
 	t7 := newTask()
 	t7.Hours = []float64{8.0, 12.0}
+	t7.Name = "#7 task"
 	if !t7.isDone() {
 		panic("done task wasn't done")
 	}
 	t8 := newTask()
 	t8.Hours = []float64{0.5, 2}
+	t8.Name = "#8 task"
 	if !t8.isDone() {
 		panic("done task wasn't done")
 	}
 	t9 := newTask()
 	t9.Hours = []float64{8.0, 6.5}
+	t9.Name = "#9 task"
 	if !t9.isDone() {
 		panic("done task wasn't done")
 	}
 	return &estFile{
 		Version: 1,
 		Tasks: []task{
-			*newTask(),
-			*newTask(),
 			*t0,
 			*t1,
 			*t2,
