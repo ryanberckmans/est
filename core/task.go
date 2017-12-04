@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"math"
 	"sort"
 	"time"
@@ -104,6 +105,64 @@ func (t *Task) EstimateAccuracyRatio() float64 {
 	return t.EstimatedHours() / t.ActualHours()
 }
 
+// RenderTaskOneLineSummary returns a string rendering of passed task
+// suitable to be included in a one-task-per-line output to user.
+func RenderTaskOneLineSummary(t *Task) string {
+	idPrefix := t.ID.String()[0:5]      // TODO dynamic length of ID prefix based on uniqueness of all task IDs. (Inject IDPrefixLen)
+	_, month, day := t.CreatedAt.Date() // TODO this should be "last updated at"; maybe we have actually an UpdatedAt or dynamically select from latest of the dates
+	estimate := t.EstimatedHours()      // TODO this should be nice format "12h, 2d"; maybe represent estimate as a Duration
+	// TODO replace with something nice, also use ShortName/Summary
+	nameFixedWidth := 12
+	lenRemaining := nameFixedWidth - len(t.Name)
+	var name string
+	if lenRemaining > 0 {
+		name = t.Name
+		for ; lenRemaining > 0; lenRemaining-- {
+			name += " "
+		}
+	} else {
+		name = t.Name[:nameFixedWidth]
+	}
+
+	status := "unestimated" // TODO danger orange in colors package :)
+	switch t.status() {
+	case taskStatusDeleted:
+		status = "deleted"
+	case taskStatusDone:
+		status = fmt.Sprintf("done in %.1fh", t.ActualHours())
+	case taskStatusStarted:
+		status = "started"
+	case taskStatusEstimated:
+		status = "estimated"
+	}
+
+	return fmt.Sprintf("%s\t%d/%d\t%.1fh\t%s\t%s", idPrefix, month, day, estimate, name, status)
+}
+
+type taskStatus int
+
+const (
+	taskStatusDeleted = iota
+	taskStatusDone
+	taskStatusEstimated
+	taskStatusStarted
+	taskStatusUnestimated
+)
+
+func (t *Task) status() taskStatus {
+	switch {
+	case t.IsDeleted:
+		return taskStatusDeleted
+	case t.IsDone():
+		return taskStatusDone
+	case t.IsEstimated() && !t.IsStarted(): // TODO work out status venn diagram, right now estimated is a superset of started
+		return taskStatusEstimated
+	case t.IsStarted():
+		return taskStatusStarted
+	}
+	return taskStatusUnestimated
+}
+
 func (ts tasks) NotDeleted() tasks {
 	return filterTasks(ts, func(t *Task) bool {
 		return !t.IsDeleted
@@ -145,6 +204,11 @@ func (ts tasks) SortByStartedAtDescending() tasks {
 	return ts
 }
 
+func (ts tasks) SortByStatusDescending() tasks {
+	sort.Sort(sortByStatusDescending(ts))
+	return ts
+}
+
 func filterTasks(ts []Task, fn func(t *Task) bool) []Task {
 	if ts == nil {
 		return nil
@@ -167,6 +231,20 @@ func (ts sortByStartedAtDescending) Less(i, j int) bool {
 	return ts[i].StartedAt.After(ts[j].StartedAt)
 }
 func (ts sortByStartedAtDescending) Swap(i, j int) {
+	tmp := ts[j]
+	ts[j] = ts[i]
+	ts[i] = tmp
+}
+
+type sortByStatusDescending tasks
+
+func (ts sortByStatusDescending) Len() int {
+	return len(ts)
+}
+func (ts sortByStatusDescending) Less(i, j int) bool {
+	return ts[i].status() > ts[j].status()
+}
+func (ts sortByStatusDescending) Swap(i, j int) {
 	tmp := ts[j]
 	ts[j] = ts[i]
 	ts[i] = tmp

@@ -151,6 +151,8 @@ func fakeEstfile() *EstFile {
 	if !t11.IsStarted() {
 		panic("started task wasn't started")
 	}
+	t12 := NewTask()
+	t12.Name = "est show"
 	return &EstFile{
 		Version: 1,
 		Tasks: []Task{
@@ -166,6 +168,7 @@ func fakeEstfile() *EstFile {
 			*t9,
 			*t10,
 			*t11,
+			*t12,
 		},
 		FakeHistoricalEstimateAccuracyRatios: makeFakeHistoricalEstimateAccuracyRatios(),
 	}
