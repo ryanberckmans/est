@@ -29,6 +29,7 @@ func doLS() {
 		os.Stdout.WriteString(strings.Join(rs, "\n"))
 	}, func() {
 		// failed to load estconfig or estfile. Err printed elsewhere.
+		os.Exit(1)
 	})
 }
 

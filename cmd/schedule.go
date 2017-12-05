@@ -41,6 +41,7 @@ func runSchedule() {
 		}
 	}, func() {
 		// failed to load estconfig or estfile. Err printed elsewhere.
+		os.Exit(1)
 	})
 }
 

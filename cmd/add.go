@@ -69,6 +69,7 @@ Examples:
 			fmt.Println(core.RenderTaskOneLineSummary(t))
 		}, func() {
 			// failed to load estconfig or estfile. Err printed elsewhere.
+			os.Exit(1)
 		})
 	},
 }
