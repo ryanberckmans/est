@@ -6,7 +6,7 @@ import (
 
 // PredictedDeliveryDateChart renders a full-terminal chart, for predicted delivery
 // dates of passed tasks, until user presses 'Q' to quit.
-func PredictedDeliveryDateChart(predictedDaysInFuture []float64, ts []Task) {
+func PredictedDeliveryDateChart(predictedDaysInFuture []float64, ts []Task, pct []string) {
 	err := termui.Init()
 	if err != nil {
 		panic(err)
@@ -15,7 +15,7 @@ func PredictedDeliveryDateChart(predictedDaysInFuture []float64, ts []Task) {
 
 	lc0 := termui.NewLineChart()
 	lc0.BorderLabel = "Predicted delivery date for unstarted, estimated tasks"
-	lc0.Mode = "dot"
+	// lc0.Mode = "dot"
 	lc0.Data = predictedDaysInFuture
 	lc0.Height = 24
 	lc0.AxesColor = termui.ColorWhite
@@ -37,19 +37,33 @@ func PredictedDeliveryDateChart(predictedDaysInFuture []float64, ts []Task) {
 	for i := range ts {
 		rs[i+2] = ts[i].Name
 	}
-	ls := termui.NewList()
-	ls.Border = false
-	ls.Items = rs
-	ls.PaddingTop = 2
-	ls.Height = len(rs) + ls.PaddingTop
+	taskList := termui.NewList()
+	taskList.Border = false
+	taskList.Items = rs
+	taskList.PaddingTop = 2
+	taskList.Height = len(rs) + taskList.PaddingTop
+
+	dds := make([]string, len(pct)+2)
+	dds[0] = "Predicted dates"
+	// dds[1] is newline
+	for i := range pct {
+		dds[i+2] = pct[i]
+	}
+	deliveryDateList := termui.NewList()
+	deliveryDateList.Border = false
+	deliveryDateList.Items = dds
+	deliveryDateList.PaddingTop = 1
+	deliveryDateList.PaddingLeft = 1
+	deliveryDateList.Height = len(dds) + deliveryDateList.PaddingTop
 
 	termui.Body.AddRows(
 		termui.NewRow(
-			termui.NewCol(1, 0, yAxisLabel),
-			termui.NewCol(10, 0, lc0),
+			termui.NewCol(2, 0, yAxisLabel),
+			termui.NewCol(8, 0, lc0),
+			termui.NewCol(2, 0, deliveryDateList),
 		),
-		termui.NewRow(termui.NewCol(12, 3, xAxisLabel)),
-		termui.NewRow(termui.NewCol(12, 3, ls)),
+		termui.NewRow(termui.NewCol(12, 4, xAxisLabel)),
+		termui.NewRow(termui.NewCol(12, 0, taskList)),
 	)
 	termui.Body.Align()
 	termui.Render(termui.Body)

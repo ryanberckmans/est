@@ -3,18 +3,17 @@ package core
 import (
 	"fmt"
 	"math/rand"
-	"strings"
 	"time"
 )
 
-func RenderDeliverySchedule(dates [100]time.Time) string {
+func RenderDeliverySchedule(dates [100]time.Time) [21]string {
 	var ss [21]string
 	ss[0] = fmt.Sprintf("%3d%% %s", 0, dates[0].Format("Jan 2"))
 	for i := 1; i < 21; i++ {
 		j := i*5 - 1
 		ss[i] = fmt.Sprintf("%3d%% %s", j+1, dates[j].Format("Jan 2"))
 	}
-	return strings.Join(ss[:], "\n") + "\n"
+	return ss
 }
 
 func DeliverySchedule(historicalEstimateAccuracyRatios []float64, ts []Task) [100]time.Time {

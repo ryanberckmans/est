@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"os"
+	"strings"
 	"time"
 
 	"github.com/ryanberckmans/est/core"
@@ -23,21 +24,24 @@ actually take, based on personalized accuracy of historical task estimates.`,
 	},
 }
 
-var scheduleDisplayChart bool
+var scheduleDisplayDatesOnly bool
 
 func runSchedule() {
 	core.WithEstConfigAndFile(func(ec *core.EstConfig, ef *core.EstFile) {
 		ts := ef.Tasks.NotDeleted().Estimated().NotStarted().NotDone()
 		dates := core.DeliverySchedule(ef.HistoricalEstimateAccuracyRatios(), ts)
-		if scheduleDisplayChart {
+		ss := core.RenderDeliverySchedule(dates)
+		if scheduleDisplayDatesOnly {
+			s := strings.Join(ss[:], "\n") + "\n"
+			os.Stdout.WriteString(s)
+		} else {
 			now := time.Now()
+			// Convert dates into wall clock days in future, because termui supports only float data
 			dd := make([]float64, len(dates))
 			for i := range dates {
 				dd[i] = dates[i].Sub(now).Hours() / 24
 			}
-			core.PredictedDeliveryDateChart(dd, ts)
-		} else {
-			os.Stdout.WriteString(core.RenderDeliverySchedule(dates))
+			core.PredictedDeliveryDateChart(dd, ts, ss[:])
 		}
 	}, func() {
 		// failed to load estconfig or estfile. Err printed elsewhere.
@@ -46,6 +50,6 @@ func runSchedule() {
 }
 
 func init() {
-	scheduleCmd.PersistentFlags().BoolVarP(&scheduleDisplayChart, "chart", "c", false, "display schedule in a chart, press Q to quit")
+	scheduleCmd.PersistentFlags().BoolVarP(&scheduleDisplayDatesOnly, "dates-only", "d", false, "display dates only, no chart, non-interactively")
 	rootCmd.AddCommand(scheduleCmd)
 }
