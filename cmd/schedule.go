@@ -10,7 +10,7 @@ import (
 
 var scheduleCmd = &cobra.Command{
 	Use:     "schedule",
-	Aliases: []string{"s"},
+	Aliases: []string{"c"},
 	Short:   "Display a probabilistic schedule for unstarted, estimated tasks",
 	Long: `Display a probabilistic schedule for unstarted, estimated tasks.
 

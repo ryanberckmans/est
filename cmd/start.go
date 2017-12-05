@@ -9,10 +9,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// TODO add --time to allow task to be started as of a different time than now
+// TODO add --time to allow task to be started as of a different time than now; this could also be --ago as described in done.go
 var startCmd = &cobra.Command{
-	Use:   "start",
-	Short: "Start a task",
+	Use:     "start",
+	Aliases: []string{"s"},
+	Short:   "Start a task",
 	Long: `Start a task
 
 est start <task ID prefix>
