@@ -2,13 +2,17 @@ package core
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"os"
 	"time"
 
 	"github.com/BurntSushi/toml"
 )
+
+const estFileMode os.FileMode = 0600
 
 // EstFile is the database for est. An estfile often corresponds
 // to one user's historical activity in est.
@@ -20,9 +24,18 @@ type EstFile struct {
 	// Fake ratios, see historicalEstimateAccuracyRatios().
 	// Fake ratios are saved to EstFile so they are stable.
 	FakeHistoricalEstimateAccuracyRatios []float64
+
+	fileName string // internal file name used to write back updated EstFile
 }
 
-// historicalEstimateAccuracyRatios returns the accuracy ratios for historical tasks
+func (ef EstFile) Write() error {
+	if ef.fileName == "" {
+		return errors.New("estFile.fileName was empty")
+	}
+	return ioutil.WriteFile(ef.fileName, []byte(encodeEstFile(ef)), estFileMode)
+}
+
+// HistoricalEstimateAccuracyRatios returns the accuracy ratios for historical tasks
 // in this EstFile. Our definition of historical are tasks which are done and not
 // deleted. This returned []float64 is the "evidence" in "evidence-based scheduling".
 func (ef EstFile) HistoricalEstimateAccuracyRatios() []float64 {
@@ -56,7 +69,7 @@ func (ef EstFile) HistoricalEstimateAccuracyRatios() []float64 {
 }
 
 func getEstFile(estFileName string) (EstFile, error) {
-	if err := createFileWithDefaultContentsIfNotExists(estFileName, fakeEstfileContents()); err != nil {
+	if err := createFileWithDefaultContentsIfNotExists(estFileName, estFileMode, encodeEstFile(fakeEstfile())); err != nil {
 		return EstFile{}, fmt.Errorf("couldn't find or create %s: %s", estFileName, err)
 	}
 
@@ -70,7 +83,15 @@ func getEstFile(estFileName string) (EstFile, error) {
 	return ef, err
 }
 
-func fakeEstfile() *EstFile {
+func encodeEstFile(ef EstFile) string {
+	buf := new(bytes.Buffer)
+	if err := toml.NewEncoder(buf).Encode(ef); err != nil {
+		panic(fmt.Errorf("encodeEstFile failed: %s", err))
+	}
+	return buf.String()
+}
+
+func fakeEstfile() EstFile {
 	// Done task
 	t0 := NewTask()
 	t0.Hours = []float64{6.0, 9.2}
@@ -153,7 +174,7 @@ func fakeEstfile() *EstFile {
 	}
 	t12 := NewTask()
 	t12.Name = "est show"
-	return &EstFile{
+	return EstFile{
 		Version: 1,
 		Tasks: []Task{
 			*t0,
@@ -181,12 +202,4 @@ func makeFakeHistoricalEstimateAccuracyRatios() []float64 {
 		fs[i] = rand.NormFloat64()*0.2 + 0.8 // the average task for our fake ratios is delivered in 25% more time than estimated; one sigma of tasks are delivered on time or better (about 16% of tasks). Since fake ratios are used to pad predictions when real evidence is scarce, this is a conservative lack of confidence in a new estimator.
 	}
 	return fs
-}
-
-func fakeEstfileContents() string {
-	buf := new(bytes.Buffer)
-	if err := toml.NewEncoder(buf).Encode(*fakeEstfile()); err != nil {
-		panic(err)
-	}
-	return buf.String()
 }

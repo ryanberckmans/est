@@ -2,7 +2,7 @@ package core
 
 import "os"
 
-func createFileWithDefaultContentsIfNotExists(filename string, defaultContents string) error {
+func createFileWithDefaultContentsIfNotExists(filename string, fileMode os.FileMode, defaultContents string) error {
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		// no-op, filename will be created
 	} else if err != nil {
@@ -12,6 +12,10 @@ func createFileWithDefaultContentsIfNotExists(filename string, defaultContents s
 		return nil
 	}
 	f, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	err = f.Chmod(fileMode)
 	if err != nil {
 		return err
 	}

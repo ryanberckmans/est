@@ -7,6 +7,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+const estConfigMode os.FileMode = 0600
+
 const estConfigDefaultContents string = `
 # Your estfile stores your tasks and estimates. Some users may want to change this to a location with automatic backup, such as Dropbox or Google Drive.
 estfile = "$HOME/.estfile.toml"
@@ -25,7 +27,7 @@ type EstConfig struct {
 // getEstconfig returns the singleton estConfig for this process.
 // Creates a config file if none found.
 func getEstConfig() (EstConfig, error) {
-	if err := createFileWithDefaultContentsIfNotExists(os.Getenv("HOME")+"/"+estConfigDefaultFileName, estConfigDefaultContents); err != nil {
+	if err := createFileWithDefaultContentsIfNotExists(os.Getenv("HOME")+"/"+estConfigDefaultFileName, estConfigMode, estConfigDefaultContents); err != nil {
 		return EstConfig{}, fmt.Errorf("couldn't find or create %s: %s", estConfigDefaultFileName, err)
 	}
 

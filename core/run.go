@@ -17,12 +17,14 @@ func WithEstConfigAndFile(fn func(ec *EstConfig, ef *EstFile), failFn func()) {
 		return
 	}
 
-	ef, err := getEstFile(strings.Replace(ec.Estfile, "$HOME", os.Getenv("HOME"), -1)) // TODO support replacement of any env
+	estFileName := strings.Replace(ec.Estfile, "$HOME", os.Getenv("HOME"), -1)
+	ef, err := getEstFile(estFileName) // TODO support replacement of any env
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "fatal: %s", err)
 		failFn()
 		return
 	}
+	ef.fileName = estFileName
 
 	fn(&ec, &ef)
 }
