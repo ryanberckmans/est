@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ryanberckmans/est/core"
 	"github.com/spf13/cobra"
@@ -18,10 +19,11 @@ var addCmd = &cobra.Command{
 	Short:   "Add a task",
 	Long: `Add a new task
 
-est add [(-e | --estimate) <estimate>] <task name>
+est add [(-e | --estimate) <estimate>] [--start] <task name>
 
 The new task name is the concatenation of all non-flag args, no quotes required.
 An estimate can be provided with -e, otherwise the new task will be unestimated.
+If an estimate was provided, the new task can be immediately started with -s.
 
 Estimates can be provided in hours "3.5h", days "2d", or weeks "0.75w". Defaults
 to hours if unit unspecified. One day is equal to eight hours. One week is equal
@@ -39,6 +41,9 @@ Examples:
 
   # Add an estimated task; estimate is half a day; flag can go after task name.
   est a fix the bug -e 0.5d
+
+  # Add and start an estimated task.
+  est a -e 1.5h -s add another button
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		name := strings.TrimSpace(strings.Join(args, " "))
@@ -47,7 +52,7 @@ Examples:
 			os.Exit(1)
 			return
 		}
-		estimate, err := parseEstimate(addCmdNewTaskEstimate)
+		estimate, err := parseEstimate(addCmdEstimate)
 		if err != nil {
 			fmt.Println("fatal: " + err.Error())
 			os.Exit(1)
@@ -58,6 +63,13 @@ Examples:
 			t.Name = name
 			if estimate != 0 {
 				t.Hours = []float64{estimate}
+			}
+			if addCmdStartNow && estimate == 0 {
+				fmt.Println("fatal: cannot immediate start new task because no estimate was given")
+				os.Exit(1)
+				return
+			} else if addCmdStartNow {
+				t.Start(time.Now())
 			}
 			ef.Tasks = append(ef.Tasks, *t)
 			if err := ef.Write(); err != nil {
@@ -73,8 +85,9 @@ Examples:
 	},
 }
 
-var estimateRegexp = regexp.MustCompile(`^([1-9](\.[0-9]*)?$|^[0-9]\.[0-9]+)(h|d|w)?$`)
+var estimateRegexp = regexp.MustCompile(`^([1-9](\.[0-9]*)?|[0-9]\.[0-9]+)(h|d|w)?$`)
 
+// TODO move into a lib and unit test
 func parseEstimate(e string) (float64, error) {
 	if e == "" {
 		return 0, nil
@@ -104,9 +117,11 @@ func parseEstimate(e string) (float64, error) {
 	return f * unitMultiplier, nil
 }
 
-var addCmdNewTaskEstimate string
+var addCmdEstimate string
+var addCmdStartNow bool
 
 func init() {
-	addCmd.PersistentFlags().StringVarP(&addCmdNewTaskEstimate, "estimate", "e", "", "estimate new task")
+	addCmd.PersistentFlags().StringVarP(&addCmdEstimate, "estimate", "e", "", "estimate new task")
+	addCmd.PersistentFlags().BoolVarP(&addCmdStartNow, "start", "s", false, "immediately start new task")
 	rootCmd.AddCommand(addCmd)
 }
