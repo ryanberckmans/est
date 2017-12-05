@@ -25,9 +25,10 @@ The new task name is the concatenation of all non-flag args, no quotes required.
 An estimate can be provided with -e, otherwise the new task will be unestimated.
 If an estimate was provided, the new task can be immediately started with -s.
 
-Estimates can be provided in hours "3.5h", days "2d", or weeks "0.75w". Defaults
-to hours if unit unspecified. One day is equal to eight hours. One week is equal
-to five days. In future, adherence to business days / hours may be configurable.
+Estimates can be provided in minutes "30m", hours "3.5h", days "2d", or weeks
+"0.75w". Defaults to hours if unit unspecified. One day is equal to eight hours.
+One week is equal to five days. In future, adherence to business days / hours
+may be configurable.
 
 Examples:
   # Add an unestimated task named "my new task".
@@ -43,7 +44,7 @@ Examples:
   est a fix the bug -e 0.5d
 
   # Add and start an estimated task.
-  est a -e 1.5h -s add another button
+  est a -e 30m -s add another button
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		name := strings.TrimSpace(strings.Join(args, " "))
@@ -85,7 +86,7 @@ Examples:
 	},
 }
 
-var estimateRegexp = regexp.MustCompile(`^([1-9](\.[0-9]*)?|[0-9]\.[0-9]+)(h|d|w)?$`)
+var estimateRegexp = regexp.MustCompile(`^([1-9][0-9]*(\.[0-9]*)?|0\.[0-9]+)(m|h|d|w)?$`)
 
 // TODO move into a lib and unit test
 func parseEstimate(e string) (float64, error) {
@@ -98,6 +99,9 @@ func parseEstimate(e string) (float64, error) {
 	unitMultiplier := 1.0 // default to hours
 	var eWithoutUnit string
 	switch e[len(e)-1:] {
+	case "m":
+		eWithoutUnit = e[:len(e)-1]
+		unitMultiplier = 1 / 60.0 // 1/60 hours in a minute
 	case "h":
 		eWithoutUnit = e[:len(e)-1]
 	case "d":
