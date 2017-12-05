@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -163,6 +164,17 @@ func (t *Task) status() taskStatus {
 	return taskStatusUnestimated
 }
 
+// FindByIDPrefix returns the index of the first task to match passed Task.ID prefix.
+// Returns -1 if no task found.
+func (ts tasks) FindByIDPrefix(prefix string) int {
+	if prefix == "" {
+		return -1
+	}
+	return searchTasks(ts, func(t *Task) bool {
+		return strings.HasPrefix(t.ID.String(), prefix)
+	})
+}
+
 func (ts tasks) NotDeleted() tasks {
 	return filterTasks(ts, func(t *Task) bool {
 		return !t.IsDeleted
@@ -207,6 +219,15 @@ func (ts tasks) SortByStartedAtDescending() tasks {
 func (ts tasks) SortByStatusDescending() tasks {
 	sort.Sort(sortByStatusDescending(ts))
 	return ts
+}
+
+func searchTasks(ts []Task, fn func(t *Task) bool) int {
+	for i := range ts {
+		if fn(&ts[i]) {
+			return i
+		}
+	}
+	return -1
 }
 
 func filterTasks(ts []Task, fn func(t *Task) bool) []Task {
