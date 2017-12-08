@@ -26,7 +26,7 @@ func futureBusinessHoursToTime(bhs []float64) []time.Time {
 
 // TODO unit test
 func businessHoursToDays(h float64) int {
-	businessHoursInAday := 8.0 // TODO golang seems to want to deafult to float64, maybe we should just use float64 ya? HOw will this affect serialization?
+	businessHoursInAday := 8.0
 	d := 0
 	for h > businessHoursInAday {
 		d++

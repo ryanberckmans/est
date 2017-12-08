@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
-	"time"
 
 	"github.com/BurntSushi/toml"
 )
@@ -55,7 +54,7 @@ func (ef EstFile) HistoricalEstimateAccuracyRatios() []float64 {
 
 		Another argument is to match historical accuracy ratios of a certain size with future task estimates of a certain size. If an estimator is good or bad at estimating small tasks, let that reflect in small task predictions, and same for large. To impl this, we might use historicalEstimateAccuracyRatios :: [(EstimatedHours, Ratio)], so that downstream is able to weigh ratios with knowledge of the size of their estimates.
 	*/
-	ts := ef.Tasks.NotDeleted().Done()
+	ts := ef.Tasks.IsNotDeleted().IsDone()
 	ars := make([]float64, len(ts))
 	for i := range ts {
 		ars[i] = ts[i].EstimateAccuracyRatio()
@@ -92,104 +91,105 @@ func encodeEstFile(ef EstFile) string {
 }
 
 func fakeEstfile() EstFile {
+	// TODO update fake tasks after big task refactor
 	// Done task
-	t0 := NewTask()
-	t0.Hours = []float64{6.0, 9.2}
-	t0.Name = "organize imports in math.go"
-	// t0.ShortName = "math.go imports"
-	if !t0.IsDone() {
-		panic("done task wasn't done")
-	}
-	// Deleted task
-	t1 := NewTask()
-	t1.Name = "this task was deleted"
-	t1.IsDeleted = true
-	// Started task
-	t2 := NewTask()
-	t2.Hours = []float64{4.0}
-	t2.StartedAt = time.Now().Add(-time.Minute)
-	t2.Name = "optimize monte carlo functions"
-	if !t2.IsStarted() {
-		panic("started task wasn't started")
-	}
-	// Estimated tasks
-	t3 := NewTask()
-	t3.Hours = []float64{12}
-	t3.Name = "impl est-rm"
-	if !t3.IsEstimated() || t3.IsStarted() {
-		panic("estimated task wasn't estimated or is started")
-	}
-	t4 := NewTask()
-	t4.Hours = []float64{16}
-	t4.Name = "design shared predicted schedule for a team sharing estfiles"
-	// t4.ShortName = "team schedule"
-	if !t4.IsEstimated() || t4.IsStarted() {
-		panic("estimated task wasn't estimated or is started")
-	}
-	t5 := NewTask()
-	t5.Hours = []float64{4.75}
-	t5.Name = "#5 task"
-	if !t5.IsEstimated() || t5.IsStarted() {
-		panic("estimated task wasn't estimated or is started")
-	}
-	// More done tasks
-	t6 := NewTask()
-	t6.Hours = []float64{3.0, 3.1}
-	t6.Name = "#6 task"
-	if !t6.IsDone() {
-		panic("done task wasn't done")
-	}
-	t7 := NewTask()
-	t7.Hours = []float64{8.0, 12.0}
-	t7.Name = "#7 task"
-	if !t7.IsDone() {
-		panic("done task wasn't done")
-	}
-	t8 := NewTask()
-	t8.Hours = []float64{0.5, 2}
-	t8.Name = "#8 task"
-	if !t8.IsDone() {
-		panic("done task wasn't done")
-	}
-	t9 := NewTask()
-	t9.Hours = []float64{8.0, 6.5}
-	t9.Name = "#9 task"
-	if !t9.IsDone() {
-		panic("done task wasn't done")
-	}
-	// More started tasks
-	t10 := NewTask()
-	t10.Hours = []float64{13.0}
-	t10.StartedAt = time.Now().Add(-time.Second)
-	t10.Name = "fix dbl error"
-	if !t10.IsStarted() {
-		panic("started task wasn't started")
-	}
-	t11 := NewTask()
-	t11.Hours = []float64{13.0}
-	t11.StartedAt = time.Now().Add(-time.Second * 2)
-	t11.Name = "prob. mass fn"
-	if !t11.IsStarted() {
-		panic("started task wasn't started")
-	}
-	t12 := NewTask()
-	t12.Name = "est show"
+	// t0 := NewTask()
+	// t0.Hours = []float64{6.0, 9.2}
+	// t0.Name = "organize imports in math.go"
+	// // t0.ShortName = "math.go imports"
+	// if !t0.IsDone() {
+	// 	panic("done task wasn't done")
+	// }
+	// // Deleted task
+	// t1 := NewTask()
+	// t1.Name = "this task was deleted"
+	// t1.IsDeleted = true
+	// // Started task
+	// t2 := NewTask()
+	// t2.Hours = []float64{4.0}
+	// t2.StartedAt = time.Now().Add(-time.Minute)
+	// t2.Name = "optimize monte carlo functions"
+	// if !t2.IsStarted() {
+	// 	panic("started task wasn't started")
+	// }
+	// // Estimated tasks
+	// t3 := NewTask()
+	// t3.Hours = []float64{12}
+	// t3.Name = "impl est-rm"
+	// if !t3.IsEstimated() || t3.IsStarted() {
+	// 	panic("estimated task wasn't estimated or is started")
+	// }
+	// t4 := NewTask()
+	// t4.Hours = []float64{16}
+	// t4.Name = "design shared predicted schedule for a team sharing estfiles"
+	// // t4.ShortName = "team schedule"
+	// if !t4.IsEstimated() || t4.IsStarted() {
+	// 	panic("estimated task wasn't estimated or is started")
+	// }
+	// t5 := NewTask()
+	// t5.Hours = []float64{4.75}
+	// t5.Name = "#5 task"
+	// if !t5.IsEstimated() || t5.IsStarted() {
+	// 	panic("estimated task wasn't estimated or is started")
+	// }
+	// // More done tasks
+	// t6 := NewTask()
+	// t6.Hours = []float64{3.0, 3.1}
+	// t6.Name = "#6 task"
+	// if !t6.IsDone() {
+	// 	panic("done task wasn't done")
+	// }
+	// t7 := NewTask()
+	// t7.Hours = []float64{8.0, 12.0}
+	// t7.Name = "#7 task"
+	// if !t7.IsDone() {
+	// 	panic("done task wasn't done")
+	// }
+	// t8 := NewTask()
+	// t8.Hours = []float64{0.5, 2}
+	// t8.Name = "#8 task"
+	// if !t8.IsDone() {
+	// 	panic("done task wasn't done")
+	// }
+	// t9 := NewTask()
+	// t9.Hours = []float64{8.0, 6.5}
+	// t9.Name = "#9 task"
+	// if !t9.IsDone() {
+	// 	panic("done task wasn't done")
+	// }
+	// // More started tasks
+	// t10 := NewTask()
+	// t10.Hours = []float64{13.0}
+	// t10.StartedAt = time.Now().Add(-time.Second)
+	// t10.Name = "fix dbl error"
+	// if !t10.IsStarted() {
+	// 	panic("started task wasn't started")
+	// }
+	// t11 := NewTask()
+	// t11.Hours = []float64{13.0}
+	// t11.StartedAt = time.Now().Add(-time.Second * 2)
+	// t11.Name = "prob. mass fn"
+	// if !t11.IsStarted() {
+	// 	panic("started task wasn't started")
+	// }
+	// t12 := NewTask()
+	// t12.Name = "est show"
 	return EstFile{
 		Version: 1,
-		Tasks: []Task{
-			*t0,
-			*t1,
-			*t2,
-			*t3,
-			*t4,
-			*t5,
-			*t6,
-			*t7,
-			*t8,
-			*t9,
-			*t10,
-			*t11,
-			*t12,
+		Tasks:   []Task{
+		// *t0,
+		// *t1,
+		// *t2,
+		// *t3,
+		// *t4,
+		// *t5,
+		// *t6,
+		// *t7,
+		// *t8,
+		// *t9,
+		// *t10,
+		// *t11,
+		// *t12,
 		},
 		FakeHistoricalEstimateAccuracyRatios: makeFakeHistoricalEstimateAccuracyRatios(),
 	}

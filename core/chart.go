@@ -35,7 +35,7 @@ func PredictedDeliveryDateChart(predictedDaysInFuture []float64, ts []Task, pct 
 	rs[0] = "Tasks in schedule"
 	// rs[1] is newline
 	for i := range ts {
-		rs[i+2] = ts[i].Name
+		rs[i+2] = ts[i].Name()
 	}
 	taskList := termui.NewList()
 	taskList.Border = false
