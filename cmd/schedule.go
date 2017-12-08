@@ -27,6 +27,9 @@ actually take, based on personalized accuracy of historical task estimates.`,
 var scheduleDisplayDatesOnly bool
 
 func runSchedule() {
+	pt := core.PublicTask{}
+	id := pt.ID
+
 	core.WithEstConfigAndFile(func(ec *core.EstConfig, ef *core.EstFile) {
 		ts := ef.Tasks.NotDeleted().Estimated().NotStarted().NotDone()
 		dates := core.DeliverySchedule(ef.HistoricalEstimateAccuracyRatios(), ts)

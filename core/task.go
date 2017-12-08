@@ -1,8 +1,8 @@
 package core
 
 import (
+	"errors"
 	"fmt"
-	"math"
 	"sort"
 	"strings"
 	"time"
@@ -12,117 +12,164 @@ import (
 
 type tasks []Task
 
-// Task is the unit of estimation for est.
-// Users estimate and do tasks, and then est predicts future tasks' delivery schedule.
-// A task is the same thing as a story, feature, bug, etc.
+type event struct {
+	When time.Time
+	Type string
+	Msg  string
+}
+
+/*
+	TODO doc orthogonal state spaces
+		Deleted
+		Unestimated | Estimated
+		NeverStarted | Started | Done
+			but, NeverStarted == ActualUpdatedAt.IsZero()
+*/
+
+// Task is a wrapper around task. Illegal state is highly representable in a task,
+// and some task state can be updated only in the context of a collection of other
+// tasks. This wrapper is an experiment in information hiding, so we can guarantee
+// only legal task state. The root cause here is that task fields must be exported
+// to be automatically serializeable, so this wrapper tries to give us both
+// a nice API and easy serialization.
 type Task struct {
-	// TODO do we want to allow tasks to be created without estimates? is this a backlog tool, then, too? I can see this being really useful, you have 4 tasks, want to record them all, and not yet sure what estimate will be for last one, because it depends on formers.
-	/*
-		Ideas
-
-		$ est add  // -e, --estimate parameter is optional
-		$ est est // estimate a task, if it already has an estimate it will fail unless you give --force
-
-		instead of EstimatedAt, could have EstimateCount to keep track of flaky estimates
-	*/
-	ID        uuid.UUID
-	Name      string
-	CreatedAt time.Time
-	StartedAt time.Time // If len(Hours) is 0, StartedAt is undefined, because an unestimated task cannot be started. (I.e. StartedAt is not orthogonal to Hours). Otherwise, this task is unstarted iff StartedAt.IsZero(), else this task is in progress as of StartedAt.
-	// TODO DoneAt ?? not used for math but for backlog purposes. Maybe a simple event log. But, if DoneAt is buried in event log, will make it more difficult to sort by doneAt.
-	Hours     []float64 // Hours[0] is the estimate for this task. [1] is time elapsed between initial start/stop. [N] is subsequent starts/stops. An alternative to `Hours []float64` is `Durations []time.Duration`, however our monte carlo algorithms use float64 and hours is easier to read in raw estfile.
-	IsDeleted bool
+	task task
 }
 
 func NewTask() *Task {
-	return &Task{
-		ID:        uuid.New(),
-		CreatedAt: time.Now(),
-	}
+	return &Task{task: newTask()}
 }
 
-// TODO setting task name should trim whitespace and have a maximum name length. same for shortname.
-
-// Start this task, panicking if this would create illegal state.
-func (t *Task) Start(now time.Time) {
-	if !t.IsEstimated() {
-		panic("cannot start unestimated task") // an error would be better if this were a library
-	}
-	if t.IsStarted() {
-		panic("cannot start task which is already started")
-	}
-	t.StartedAt = now
+// LogActual logs actual time against this task. Most tasks should use auto time
+// tracking. LogActual() provides an escape hatch for auto time tracking edge cases.
+func (t *Task) LogActual(d time.Duration) {
+	t.task.Actual += d
+	t.task.ActualUpdatedAt = time.Now() // TODO it's unclear to me if now should be injected. I.e. for business hours tracking, we typically don't want to consider "nows" outside of business hours. But I don't think that extends to ActualUpdatedAt; I think business hours are completely ignored outside of auto time tracking and this should always just be time.Now().
 }
 
-// Stop this task, panicking if this would create illegal state.
-func (t *Task) Stop(now time.Time) {
-	if !t.IsStarted() {
-		panic("cannot stop task which is unstarted")
-	}
-	elapsed := math.Max(now.Sub(t.StartedAt).Hours(), 0) // disallow negative elapsed, which is philosophically interesting but produces invalid accuracy ratios.
-	t.Hours = append(t.Hours, elapsed)
-	t.StartedAt = time.Time{}
+func (t *Task) ID() uuid.UUID {
+	return t.task.ID
+}
+
+func (t *Task) Name() string {
+	return t.task.Name
+}
+
+func (t *Task) SetName(n string) {
+	// TODO setting task name should trim whitespace and have a maximum name length. same for shortname.
+	t.task.Name = n
+}
+
+func (t *Task) CreatedAt() time.Time {
+	return t.task.CreatedAt
 }
 
 func (t *Task) IsEstimated() bool {
-	return len(t.Hours) > 0
+	return t.task.Estimated != 0
+}
+
+func (t *Task) IsNeverStarted() bool {
+	return t.task.ActualUpdatedAt.IsZero()
 }
 
 func (t *Task) IsStarted() bool {
-	return t.IsEstimated() && !t.StartedAt.IsZero()
+	return !t.IsNeverStarted() && !t.task.IsDone
 }
 
 func (t *Task) IsDone() bool {
-	return len(t.Hours) > 1 && t.StartedAt.IsZero()
+	return !t.IsNeverStarted() && t.task.IsDone
+}
+
+func (t *Task) IsDeleted() bool {
+	return t.task.IsDeleted
 }
 
 func (t *Task) EstimatedHours() float64 {
-	if len(t.Hours) < 1 {
-		return 0
-	}
-	return t.Hours[0]
+	return t.task.Estimated.Hours()
 }
 
 // ActualHours is the sum of elapsed time spent on this task for start-stop intervals.
 func (t *Task) ActualHours() float64 {
-	if len(t.Hours) < 2 {
-		return 0
-	}
-	var hours float64
-	for i := 1; i < len(t.Hours); i++ {
-		hours += t.Hours[i]
-	}
-	return hours
+	return t.task.Actual.Hours()
 }
 
 // EstimateAccuracyRatio returns a ratio of estimate / actual hours for a done task.
 // I.e. 1.0 is perfect estimate, 2.0 means task was twice as fast, 0.5 task twice as long.
 func (t *Task) EstimateAccuracyRatio() float64 {
-	if len(t.Hours) < 2 {
-		// we need an estimate and elapsed time to calculate accuracy ratio
+	if t.ActualHours() == 0 {
 		return 0
 	}
-	// It's possible this task isStarted(), but we'll allow computing accuracy ratio on a previously-done task which was restarted, because it's simple and may be useful
+	// Canonically we want an accuracy ratio for only done tasks, but we'll allow computing it on any task, because it's simple and may be useful.
 	return t.EstimatedHours() / t.ActualHours()
+}
+
+func (t *Task) status() taskStatus {
+	switch {
+	// The order of these cases is significant. Deleted is orthogonal to Done | Started; both are orthogonal to Estimated | Unestimated.
+	case t.task.IsDeleted:
+		return taskStatusDeleted
+	case t.IsDone():
+		return taskStatusDone
+	case t.IsStarted():
+		return taskStatusStarted
+	case t.IsEstimated():
+		return taskStatusEstimated
+	}
+	return taskStatusUnestimated
+}
+
+// task doesn't actually have a field taskStatus, because taskStatus is a projection
+// of orthogonal state into one dimension. It helps explain task state to humans.
+type taskStatus int
+
+const (
+	taskStatusDeleted = iota
+	taskStatusDone
+	taskStatusEstimated
+	taskStatusStarted
+	taskStatusUnestimated
+)
+
+// task is the unit of estimation for est.
+// Users estimate and do tasks, and then est predicts future tasks' delivery schedule.
+// A task is the same thing as a story, feature, bug, etc.
+type task struct {
+	ID              uuid.UUID
+	Name            string
+	CreatedAt       time.Time
+	Events          []event       // event log to show detail to humans
+	Estimated       time.Duration // estimated hours for this task (as estimated by a human)
+	Actual          time.Duration // actual hours logged for this task
+	ActualUpdatedAt time.Time     // ActualUpdatedAt is last time this task had hours logged. This task was never stared iff ActualUpdatedAt is zero.
+	IsDone          bool          // if ActualUpdatedAt is zero, IsDone is undefined. Otherwise, this task is done if IsDone else this task is started.
+	// TODO user wants StartedAt for display order
+	IsDeleted bool // this task is deleted iff IsDeleted; orthogonal to other task state.
+}
+
+func newTask() task {
+	return task{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+	}
 }
 
 // RenderTaskOneLineSummary returns a string rendering of passed task
 // suitable to be included in a one-task-per-line output to user.
 func RenderTaskOneLineSummary(t *Task) string {
-	idPrefix := t.ID.String()[0:5]      // TODO dynamic length of ID prefix based on uniqueness of all task IDs. (Inject IDPrefixLen)
-	_, month, day := t.CreatedAt.Date() // TODO this should be "last updated at"; maybe we have actually an UpdatedAt or dynamically select from latest of the dates
-	estimate := t.EstimatedHours()      // TODO this should be nice format "12h, 2d"; maybe represent estimate as a Duration
+	idPrefix := t.task.ID.String()[0:5]      // TODO dynamic length of ID prefix based on uniqueness of all task IDs. (Inject IDPrefixLen)
+	_, month, day := t.task.CreatedAt.Date() // TODO this should be "last updated at"; maybe we have actually an UpdatedAt or dynamically select from latest of the dates
+	estimate := t.EstimatedHours()           // TODO this should be nice format "12h, 2d"; maybe represent estimate as a Duration
 	// TODO replace with something nice, also use ShortName/Summary
 	nameFixedWidth := 12
-	lenRemaining := nameFixedWidth - len(t.Name)
+	lenRemaining := nameFixedWidth - len(t.task.Name)
 	var name string
 	if lenRemaining > 0 {
-		name = t.Name
+		name = t.task.Name
 		for ; lenRemaining > 0; lenRemaining-- {
 			name += " "
 		}
 	} else {
-		name = t.Name[:nameFixedWidth]
+		name = t.task.Name[:nameFixedWidth]
 	}
 
 	status := "unestimated" // TODO danger orange in colors package :)
@@ -140,28 +187,45 @@ func RenderTaskOneLineSummary(t *Task) string {
 	return fmt.Sprintf("%s\t%d/%d\t%.1fh\t%s\t%s", idPrefix, month, day, estimate, name, status)
 }
 
-type taskStatus int
-
-const (
-	taskStatusDeleted = iota
-	taskStatusDone
-	taskStatusEstimated
-	taskStatusStarted
-	taskStatusUnestimated
-)
-
-func (t *Task) status() taskStatus {
-	switch {
-	case t.IsDeleted:
-		return taskStatusDeleted
-	case t.IsDone():
-		return taskStatusDone
-	case t.IsEstimated() && !t.IsStarted(): // TODO work out status venn diagram, right now estimated is a superset of started
-		return taskStatusEstimated
-	case t.IsStarted():
-		return taskStatusStarted
+// Start the ith task of tasks. When a task transitions to or from started,
+// auto time tracking is updated for all started tasks. Auto time tracking is
+// relative to a set of tasks, so that multiple tasks in progress share the
+// passage of time.
+// TODO what is signature of start? We must consider at least an injected time.Now() and also business hours to consider for auto time tracking.
+func (ts tasks) Start(i int) error {
+	t := &ts[i]
+	if t.IsDeleted() {
+		return errors.New("cannot start deleted task")
 	}
-	return taskStatusUnestimated
+	if !t.IsEstimated() {
+		return errors.New("cannot start unestimated task")
+	}
+	if t.IsStarted() {
+		return errors.New("cannot start task which is already started")
+	}
+
+	// TODO impl
+
+	// Previous code for elapsed might be useful:
+	// elapsed := math.Max(now.Sub(t.StartedAt).Hours(), 0) // disallow negative elapsed, which is philosophically interesting but produces invalid accuracy ratios.
+
+	return nil
+}
+
+// Mark the ith task of tasks as done. See note on Start().
+func (ts tasks) Done(i int) error {
+	t := &ts[i]
+	if !t.IsStarted() {
+		return errors.New("cannot mark done a task which isn't started")
+	}
+	if t.IsDeleted() {
+		// We don't allow starting deleted tasks or deleting a started task, and so never expect a started task to be deleted.
+		panic("expected started to be not deleted")
+	}
+
+	// TODO impl
+
+	return nil
 }
 
 // FindByIDPrefix returns the index of the first task to match passed Task.ID prefix.
@@ -171,41 +235,41 @@ func (ts tasks) FindByIDPrefix(prefix string) int {
 		return -1
 	}
 	return searchTasks(ts, func(t *Task) bool {
-		return strings.HasPrefix(t.ID.String(), prefix)
+		return strings.HasPrefix(t.ID().String(), prefix)
 	})
 }
 
-func (ts tasks) NotDeleted() tasks {
+func (ts tasks) IsNotDeleted() tasks {
 	return filterTasks(ts, func(t *Task) bool {
-		return !t.IsDeleted
+		return !t.IsDeleted()
 	})
 }
 
-func (ts tasks) Done() tasks {
+func (ts tasks) IsDone() tasks {
 	return filterTasks(ts, func(t *Task) bool {
 		return t.IsDone()
 	})
 }
 
-func (ts tasks) NotDone() tasks {
+func (ts tasks) IsNotDone() tasks {
 	return filterTasks(ts, func(t *Task) bool {
 		return !t.IsDone()
 	})
 }
 
-func (ts tasks) Estimated() tasks {
+func (ts tasks) IsEstimated() tasks {
 	return filterTasks(ts, func(t *Task) bool {
 		return t.IsEstimated()
 	})
 }
 
-func (ts tasks) Started() tasks {
+func (ts tasks) IsStarted() tasks {
 	return filterTasks(ts, func(t *Task) bool {
 		return t.IsStarted()
 	})
 }
 
-func (ts tasks) NotStarted() tasks {
+func (ts tasks) IsNotStarted() tasks {
 	return filterTasks(ts, func(t *Task) bool {
 		return !t.IsStarted()
 	})
@@ -249,7 +313,9 @@ func (ts sortByStartedAtDescending) Len() int {
 	return len(ts)
 }
 func (ts sortByStartedAtDescending) Less(i, j int) bool {
-	return ts[i].StartedAt.After(ts[j].StartedAt)
+	// TODO StartedAt
+	return false
+	// return ts[i].StartedAt.After(ts[j].StartedAt)
 }
 func (ts sortByStartedAtDescending) Swap(i, j int) {
 	tmp := ts[j]
