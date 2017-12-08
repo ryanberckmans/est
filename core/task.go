@@ -84,6 +84,30 @@ func (t *Task) IsDeleted() bool {
 	return t.task.IsDeleted
 }
 
+func (t *Task) Delete() error {
+	if t.IsStarted() {
+		return errors.New("cannot delete a started task")
+	}
+	if t.IsDeleted() {
+		return errors.New("task is already deleted")
+	}
+	t.task.IsDeleted = true
+	t.task.DeletedAt = time.Now()
+	return nil
+}
+
+func (t *Task) Undelete() error {
+	if !t.IsDeleted() {
+		return errors.New("cannot undelete task which isn't deleted")
+	}
+	if t.IsStarted() {
+		// We don't allow deleting started tasks, and so expect deleted tasks to be unstarted.
+		panic("expected task to be unstarted")
+	}
+	t.task.IsDeleted = false
+	return nil
+}
+
 func (t *Task) EstimatedHours() float64 {
 	return t.task.Estimated.Hours()
 }
@@ -136,14 +160,21 @@ const (
 type task struct {
 	ID              uuid.UUID
 	Name            string
-	CreatedAt       time.Time
-	Events          []event       // event log to show detail to humans
+	Events          []event       // event log to show history to humans
 	Estimated       time.Duration // estimated hours for this task (as estimated by a human)
 	Actual          time.Duration // actual hours logged for this task
 	ActualUpdatedAt time.Time     // ActualUpdatedAt is last time this task had hours logged. This task was never stared iff ActualUpdatedAt is zero.
 	IsDone          bool          // if ActualUpdatedAt is zero, IsDone is undefined. Otherwise, this task is done if IsDone else this task is started.
-	// TODO user wants StartedAt for display order
-	IsDeleted bool // this task is deleted iff IsDeleted; orthogonal to other task state.
+	IsDeleted       bool          // this task is deleted iff IsDeleted; orthogonal to other task state.
+
+	// These times aren't needed for tasks to work properly; they exist to
+	// show to humans.
+	// Each time is the most recent time at which the thing occurred.
+	CreatedAt   time.Time
+	EstimatedAt time.Time
+	StartedAt   time.Time
+	DoneAt      time.Time
+	DeletedAt   time.Time
 }
 
 func newTask() task {
@@ -209,6 +240,8 @@ func (ts tasks) Start(i int) error {
 	// Previous code for elapsed might be useful:
 	// elapsed := math.Max(now.Sub(t.StartedAt).Hours(), 0) // disallow negative elapsed, which is philosophically interesting but produces invalid accuracy ratios.
 
+	// TODO set StartedAt
+
 	return nil
 }
 
@@ -224,6 +257,8 @@ func (ts tasks) Done(i int) error {
 	}
 
 	// TODO impl
+
+	// TODO set DoneAt
 
 	return nil
 }
