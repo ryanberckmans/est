@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/ryanberckmans/est/core"
 	"github.com/spf13/cobra"
@@ -52,10 +53,15 @@ Examples:
 				os.Exit(1)
 				return
 			}
-			if len(ef.Tasks[i].Hours) < 1 {
-				ef.Tasks[i].Hours = []float64{estimate}
-			} else {
-				ef.Tasks[i].Hours[0] = estimate
+			// TODO just parse the estimate param into a Duration to begin with
+			d, err := time.ParseDuration(fmt.Sprintf("%fh", estimate))
+			if err != nil {
+				panic(err)
+			}
+			if err := ef.Tasks[i].SetEstimated(d); err != nil {
+				fmt.Println("fatal: " + err.Error())
+				os.Exit(1)
+				return
 			}
 			if err := ef.Write(); err != nil {
 				fmt.Printf("fatal: %v\n", err)

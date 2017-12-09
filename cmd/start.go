@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/ryanberckmans/est/core"
 	"github.com/spf13/cobra"
@@ -43,17 +42,11 @@ Examples:
 				os.Exit(1)
 				return
 			}
-			if !ef.Tasks[i].IsEstimated() {
-				fmt.Println("fatal: this task must be estimated before starting it")
+			if err := ef.Tasks.Start(i); err != nil {
+				fmt.Printf("fatal: %v\n", err)
 				os.Exit(1)
 				return
 			}
-			if ef.Tasks[i].IsStarted() {
-				fmt.Println("fatal: this task is already started")
-				os.Exit(1)
-				return
-			}
-			ef.Tasks[i].Start(time.Now())
 			if err := ef.Write(); err != nil {
 				fmt.Printf("fatal: %v\n", err)
 				os.Exit(1)

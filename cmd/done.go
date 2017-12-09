@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/ryanberckmans/est/core"
 	"github.com/spf13/cobra"
@@ -50,12 +49,11 @@ Examples:
 				os.Exit(1)
 				return
 			}
-			if !ef.Tasks[i].IsStarted() {
-				fmt.Println("fatal: this task must be started before marking it done")
+			if err := ef.Tasks.Done(i); err != nil {
+				fmt.Printf("fatal: %v\n", err)
 				os.Exit(1)
 				return
 			}
-			ef.Tasks[i].Stop(time.Now())
 			if err := ef.Write(); err != nil {
 				fmt.Printf("fatal: %v\n", err)
 				os.Exit(1)

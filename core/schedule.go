@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+// RenderDeliverySchedule returns a list of string
+// delivery dates for the passed delivery dates percentile.
 func RenderDeliverySchedule(dates [100]time.Time) [21]string {
 	var ss [21]string
 	ss[0] = fmt.Sprintf("%3d%% %s", 0, dates[0].Format("Jan 2"))
@@ -16,10 +18,12 @@ func RenderDeliverySchedule(dates [100]time.Time) [21]string {
 	return ss
 }
 
-func DeliverySchedule(historicalEstimateAccuracyRatios []float64, ts []Task) [100]time.Time {
+// DeliverySchedule returns a predicted delivery schedule, as a time percentile,
+// using the passed historical data as a basis for future work on the passed tasks.
+func DeliverySchedule(historicalEstimateAccuracyRatios []float64, ts tasks) [100]time.Time {
 	var toSamples []float64
 	for i := range ts {
-		toSamples = append(toSamples, ts[i].EstimatedHours())
+		toSamples = append(toSamples, ts[i].Estimated().Hours())
 	}
 
 	samples := sampleDistribution(100, rand.New(rand.NewSource(time.Now().UnixNano())), historicalEstimateAccuracyRatios, toSamples)
