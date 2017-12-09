@@ -11,11 +11,18 @@ const ansiReset = "\033[0m"
 const ansiBoldMagenta = "\033[95m"
 const ansiDangerOrange = "\033[38;5;202m" // color 202 of 256
 
-const promptNoTasksStarted = ansiDangerOrange + "no tasks started      " + ansiReset
+// For bash, escape the colors with \[ \] http://mywiki.wooledge.org/BashFAQ/053
+// . The \[ \] are only special when you assign PS1, if you print
+// them inside a function that runs when the prompt is displayed it
+// doesn't work. In this case you need to use the bytes \001 and \002:
+const bashOpen = "\001"
+const bashClose = "\002"
+
+const promptNoTasksStarted = bashOpen + ansiDangerOrange + bashClose + "no tasks started      " + bashOpen + ansiReset + bashClose
 
 // When the prompt cannot be displayed, provide a default prompt
 // which will cause minimal disruption to the user's prompt.
-const promptFailed = ansiDangerOrange + "est-prompt failed     " + ansiReset
+const promptFailed = bashOpen + ansiDangerOrange + bashClose + "est-prompt failed     " + bashOpen + ansiReset + bashClose
 
 // renderPrompt renders a summary of passed tasks, such that returned string is
 // suitable to be used as part of a shell prompt.
@@ -36,7 +43,7 @@ func renderPrompt(ts []*core.Task) string {
 }
 
 func promptColor(s string) string {
-	return ansiReset + ansiBoldMagenta + s + ansiReset
+	return bashOpen + ansiReset + ansiBoldMagenta + bashClose + s + bashOpen + ansiReset + bashClose
 }
 
 func promptOneTask(t *core.Task) string {
