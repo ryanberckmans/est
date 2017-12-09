@@ -28,5 +28,6 @@ func WithEstConfigAndFile(fn func(ec *EstConfig, ef *EstFile), failFn func()) {
 	}
 	ef.fileName = estFileName
 
-	fn(&ec, &ef)
+	ef2 := toExportedEstfile(ef)
+	fn(&ec, &ef2)
 }

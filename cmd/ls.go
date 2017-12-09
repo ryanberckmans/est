@@ -24,7 +24,7 @@ func doLS() {
 		ts := ef.Tasks.SortByStatusDescending()
 		rs := make([]string, len(ts)+1) // +1 causes the last element to be empty string, which causes the Join to add an extra newline
 		for i := range ts {
-			rs[i] = core.RenderTaskOneLineSummary(&ts[i])
+			rs[i] = core.RenderTaskOneLineSummary(ts[i])
 		}
 		os.Stdout.WriteString(strings.Join(rs, "\n"))
 	}, func() {

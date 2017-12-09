@@ -22,7 +22,7 @@ const promptFailed = ansiDangerOrange + "est-prompt failed     " + ansiReset
 // The rendering aims to be minimally distracting by being fixed width, commas always
 // in same char position, and same color; and maximally useful, currently by showing
 // an adaptive short form of task names.
-func renderPrompt(ts []core.Task) string {
+func renderPrompt(ts []*core.Task) string {
 	switch len(ts) {
 	case 0:
 		return promptNoTasksStarted
@@ -39,7 +39,7 @@ func promptColor(s string) string {
 	return ansiReset + ansiBoldMagenta + s + ansiReset
 }
 
-func promptOneTask(t core.Task) string {
+func promptOneTask(t *core.Task) string {
 	s := getTaskNameForPrompt(t)
 	if len(s) > 22 {
 		return s[:22]
@@ -47,22 +47,22 @@ func promptOneTask(t core.Task) string {
 	return fmt.Sprintf("%-22s", s)
 }
 
-func promptTwoTasks(t core.Task, t2 core.Task) string {
+func promptTwoTasks(t *core.Task, t2 *core.Task) string {
 	s := stringsShortForm(5, 10, strings.Fields(getTaskNameForPrompt(t)))
 	s2 := stringsShortForm(5, 10, strings.Fields(getTaskNameForPrompt(t2)))
 	return fmt.Sprintf("%10s, %-10s", s, s2)
 }
 
 // fixed width relies on len(ts) < 9, i.e. no more than 12 tasks in progress.
-func promptNTasks(t core.Task, t2 core.Task, t3 core.Task, ts []core.Task) string {
+func promptNTasks(t *core.Task, t2 *core.Task, _ *core.Task, ts []*core.Task) string {
 	s := stringsShortForm(5, 10, strings.Fields(getTaskNameForPrompt(t)))
 	s2 := stringsShortForm(4, 8, strings.Fields(getTaskNameForPrompt(t2)))
 	return fmt.Sprintf("%10s, %-8s+%d", s, s2, 1+len(ts))
 }
 
-func getTaskNameForPrompt(t core.Task) string {
+func getTaskNameForPrompt(t *core.Task) string {
 	// TODO t.ShortName is used if non-empty; maybe t.Summary instead; or t.Tags
-	return t.Name
+	return t.Name()
 }
 
 // stringsShortForm returns a short form for passed string slice

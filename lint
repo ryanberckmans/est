@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# Run a large set of linters which takes ~30s to complete.
+
+gometalinter -iuf > /dev/null && gometalinter --enable-all --cyclo-over 5 --disable=lll ./...

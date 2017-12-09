@@ -6,7 +6,7 @@ import (
 
 // PredictedDeliveryDateChart renders a full-terminal chart, for predicted delivery
 // dates of passed tasks, until user presses 'Q' to quit.
-func PredictedDeliveryDateChart(predictedDaysInFuture []float64, ts []Task, pct []string) {
+func PredictedDeliveryDateChart(predictedDaysInFuture []float64, ts tasks, pct []string) {
 	err := termui.Init()
 	if err != nil {
 		panic(err)

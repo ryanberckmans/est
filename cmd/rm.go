@@ -43,7 +43,11 @@ Examples:
 				os.Exit(1)
 				return
 			}
-			ef.Tasks[i].IsDeleted = true
+			if err := ef.Tasks[i].Delete(); err != nil {
+				fmt.Printf("fatal: %v\n", err)
+				os.Exit(1)
+				return
+			}
 			if err := ef.Write(); err != nil {
 				fmt.Printf("fatal: %v\n", err)
 				os.Exit(1)

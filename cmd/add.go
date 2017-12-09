@@ -61,18 +61,36 @@ Examples:
 		}
 		core.WithEstConfigAndFile(func(ec *core.EstConfig, ef *core.EstFile) {
 			t := core.NewTask()
-			t.Name = name
-			if estimate != 0 {
-				t.Hours = []float64{estimate}
-			}
-			if addCmdStartNow && estimate == 0 {
-				fmt.Println("fatal: cannot immediate start new task because no estimate was given")
+			if err := t.SetName(name); err != nil {
+				fmt.Printf("fatal: %v\n", err)
 				os.Exit(1)
 				return
-			} else if addCmdStartNow {
-				t.Start(time.Now())
 			}
-			ef.Tasks = append(ef.Tasks, *t)
+			if estimate != 0 {
+				// TODO just parse the estimate param into a Duration to begin with
+				d, err := time.ParseDuration(fmt.Sprintf("%fh", estimate))
+				if err != nil {
+					panic(err)
+				}
+				if err := t.SetEstimated(d); err != nil {
+					fmt.Printf("fatal: %v\n", err)
+					os.Exit(1)
+					return
+				}
+			}
+			if addCmdStartNow && estimate == 0 {
+				fmt.Println("fatal: cannot immediately start new task because no estimate was given")
+				os.Exit(1)
+				return
+			}
+			ef.Tasks = append(ef.Tasks, t)
+			if addCmdStartNow {
+				if err := ef.Tasks.Start(len(ef.Tasks) - 1); err != nil {
+					fmt.Printf("fatal: %v\n", err)
+					os.Exit(1)
+					return
+				}
+			}
 			if err := ef.Write(); err != nil {
 				fmt.Printf("fatal: %v\n", err)
 				os.Exit(1)
