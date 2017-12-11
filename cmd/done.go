@@ -24,8 +24,10 @@ task ID shown in 'est ls'.
 The actual time spent on the task is calculated automatically by est.
 TODO concurrent tasks share passage of time
 TODO explain time calculation
-TODO --ago <time>
 TODO currently tasks can be restarted after marked done; finalize / explain
+
+The done time can be in the past with -a, using the same duration syntax as the
+estimate command.
 
 The (estimated hours, actual hours) for done tasks are used as data points to
 predict delivery schedule of future tasks in 'est schedule'.
@@ -36,6 +38,9 @@ Examples:
 
   # Mark the task with ID prefix "8d6d9" as done.
   est d 8d6d9
+
+  # Mark the task with ID prefix "57" as done as of two and half hours ago.
+  est d -a 2.5h 57
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
@@ -50,7 +55,8 @@ Examples:
 				os.Exit(1)
 				return
 			}
-			if err := ef.Tasks.Done(i, time.Now()); err != nil {
+			doneTime := applyFlagAgo(time.Now())
+			if err := ef.Tasks.Done(i, doneTime); err != nil {
 				fmt.Printf("fatal: %v\n", err)
 				os.Exit(1)
 				return
@@ -60,6 +66,7 @@ Examples:
 				os.Exit(1)
 				return
 			}
+			fmt.Println(core.RenderTaskOneLineSummary(ef.Tasks[i]))
 		}, func() {
 			// failed to load estconfig or estfile. Err printed elsewhere.
 			os.Exit(1)
@@ -68,5 +75,6 @@ Examples:
 }
 
 func init() {
+	doneCmd.PersistentFlags().StringVarP(&flagAgo, "ago", "a", "", "done duration ago from now")
 	rootCmd.AddCommand(doneCmd)
 }

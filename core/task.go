@@ -499,9 +499,7 @@ func (ts sortByStartedAtDescending) Len() int {
 	return len(ts)
 }
 func (ts sortByStartedAtDescending) Less(i, j int) bool {
-	// TODO StartedAt
-	return false
-	// return ts[i].StartedAt.After(ts[j].StartedAt)
+	return ts[i].task.StartedAt.After(ts[j].task.StartedAt)
 }
 func (ts sortByStartedAtDescending) Swap(i, j int) {
 	tmp := ts[j]
