@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/ryanberckmans/est/core"
 	"github.com/spf13/cobra"
@@ -49,7 +50,7 @@ Examples:
 				os.Exit(1)
 				return
 			}
-			if err := ef.Tasks.Done(i); err != nil {
+			if err := ef.Tasks.Done(i, time.Now()); err != nil {
 				fmt.Printf("fatal: %v\n", err)
 				os.Exit(1)
 				return

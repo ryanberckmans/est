@@ -85,7 +85,7 @@ Examples:
 			}
 			ef.Tasks = append(ef.Tasks, t)
 			if addCmdStartNow {
-				if err := ef.Tasks.Start(len(ef.Tasks) - 1); err != nil {
+				if err := ef.Tasks.Start(len(ef.Tasks)-1, time.Now()); err != nil {
 					fmt.Printf("fatal: %v\n", err)
 					os.Exit(1)
 					return

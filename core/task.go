@@ -292,7 +292,7 @@ func toUnexportedTasks(ts tasks) []task {
 // relative to a set of tasks, so that multiple tasks in progress share the
 // passage of time.
 // TODO what is signature of start? We must consider at least an injected time.Now() and also business hours to consider for auto time tracking.
-func (ts tasks) Start(i int) error {
+func (ts tasks) Start(i int, now time.Time) error {
 	t := ts[i]
 	if t.IsDeleted() {
 		return errors.New("cannot start deleted task")
@@ -304,12 +304,10 @@ func (ts tasks) Start(i int) error {
 		return errors.New("cannot start task which is already started")
 	}
 
-	// TODO impl
-
-	// Previous code for elapsed might be useful:
-	// elapsed := math.Max(now.Sub(t.StartedAt).Hours(), 0) // disallow negative elapsed, which is philosophically interesting but produces invalid accuracy ratios.
-
-	now := time.Now()
+	// Auto track time against current tasks in progress. This must be done prior to
+	// starting i'th task, because shared passage of time for current started tasks
+	// must exclude this newly started task (as it wasn't auto ticking until now).
+	autoAddActual(ts.IsStarted().IsNotDeleted(), now) // IsNotDeleted is sanity because we expect started tasks to never be deleted
 	t.task.ActualUpdatedAt = now
 	t.task.StartedAt = now
 	t.task.IsDone = false
@@ -318,7 +316,7 @@ func (ts tasks) Start(i int) error {
 }
 
 // Mark the ith task of tasks as done. See note on Start().
-func (ts tasks) Done(i int) error {
+func (ts tasks) Done(i int, now time.Time) error {
 	t := ts[i]
 	if !t.IsStarted() {
 		return errors.New("cannot mark done a task which isn't started")
@@ -328,14 +326,81 @@ func (ts tasks) Done(i int) error {
 		panic("expected started to be not deleted")
 	}
 
-	// TODO impl
-
-	now := time.Now()
-	// t.task.ActualUpdatedAt = now TODO this should be set to "now" but only after tracking time
+	// Auto track time against current tasks in progress. This must
+	// be done prior to marking done the i'th task, because shared
+	// passage of time for current started tasks must include this
+	// previously started task (so all started tasks tick together).
+	autoAddActual(ts.IsStarted().IsNotDeleted(), now) // IsNotDeleted is sanity because we expect started tasks to never be deleted
+	t.task.ActualUpdatedAt = now
 	t.task.DoneAt = now
 	t.task.IsDone = true
 
 	return nil
+}
+
+// TODO unit tests
+func autoAddActual(ts tasks, end time.Time) {
+	if len(ts) < 1 {
+		return
+	}
+	for i := range ts {
+		if !ts[i].IsStarted() {
+			panic("sanity: expected ts to be all started")
+		}
+		// fmt.Printf("%+v\n", ts[i].task.ActualUpdatedAt)
+	}
+
+	ts = ts.sortByActualUpdatedAtAscending()
+
+	for {
+		lowest := ts[0].task.ActualUpdatedAt
+		if !lowest.Before(end) {
+			// All tasks' ActualUpdatedAt is >= end, i.e. job is done
+			return
+		}
+		var ts2 tasks
+		for i := 0; i < len(ts) && lowest.Equal(ts[i].task.ActualUpdatedAt); i++ {
+			ts2 = append(ts2, ts[i])
+		}
+
+		if len(ts2) < 1 {
+			panic("sanity: expected ts2 to be non-empty")
+		}
+
+		// ts2 is now the tasks which have lowest lastUpdatedAt and lastUpdatedAt
+		// < end. We will auto track shared passage of actual time for these tasks.
+		// Each task will get time at a rate of 1/len(ts2) vs. real time. To properly
+		// share the passage of time, we tick a cohort of tasks with same start time
+		// to the same end time. The start time here is `lowest`. The end time here
+		// is the lowest time in ts which is after `lowest`, or `end` if none exists.
+
+		var nextEnd time.Time
+		for i := range ts {
+			if ts[i].task.ActualUpdatedAt.After(lowest) {
+				nextEnd = ts[i].task.ActualUpdatedAt
+				break
+			}
+		}
+		if nextEnd.IsZero() {
+			// i.e. ts2 is all the tasks in ts.
+			if len(ts2) != len(ts) {
+				panic(fmt.Sprintf("sanity: expected len(ts2)==len(ts) because nextEnd == end, len(ts2)==%d, len(ts)==%d", len(ts2), len(ts)))
+			}
+			nextEnd = end
+		}
+
+		// We'll now tick ts2 in shared passage of time. ts2's start time is
+		// the same and lowest of ts. nextEnd is the next lowest time after ts2.
+
+		autoActual := nextEnd.Sub(lowest)
+		autoActualShared := autoActual / time.Duration(len(ts2))
+		// fmt.Printf("count=%d lowest=%v nextEnd=%v autoActual=%v autoActualShared=%v end=%v\n", len(ts2), lowest, nextEnd, autoActual, autoActualShared, end)
+		for i := range ts2 {
+			// TODO perhaps AddActual() and this block should share the same code so that we're only ever incrementing actual in one place.
+			ts2[i].task.Actual += autoActualShared
+			ts2[i].task.ActualUpdatedAt = nextEnd
+		}
+	}
 }
 
 // FindByIDPrefix returns the index of the first task to match passed Task.ID prefix.
@@ -401,6 +466,11 @@ func (ts tasks) SortByStatusDescending() tasks {
 	return ts
 }
 
+func (ts tasks) sortByActualUpdatedAtAscending() tasks {
+	sort.Sort(sortByActualUpdatedAtAscending(ts))
+	return ts
+}
+
 func searchTasks(ts tasks, fn func(t *Task) bool) int {
 	for i := range ts {
 		if fn(ts[i]) {
@@ -448,6 +518,20 @@ func (ts sortByStatusDescending) Less(i, j int) bool {
 	return ts[i].status() > ts[j].status()
 }
 func (ts sortByStatusDescending) Swap(i, j int) {
+	tmp := ts[j]
+	ts[j] = ts[i]
+	ts[i] = tmp
+}
+
+type sortByActualUpdatedAtAscending tasks
+
+func (ts sortByActualUpdatedAtAscending) Len() int {
+	return len(ts)
+}
+func (ts sortByActualUpdatedAtAscending) Less(i, j int) bool {
+	return ts[i].task.ActualUpdatedAt.Before(ts[j].task.ActualUpdatedAt)
+}
+func (ts sortByActualUpdatedAtAscending) Swap(i, j int) {
 	tmp := ts[j]
 	ts[j] = ts[i]
 	ts[i] = tmp
