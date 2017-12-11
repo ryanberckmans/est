@@ -10,7 +10,7 @@ const bashCompletionHelpMsg string = `To enable bash command completion for est,
 
 """
 # The next line enables bash command completion for est.
-if [ ! -z $(which est) ]; then eval "$(est bash-completion --code)"; fi
+if [ ! -z $(which est) ]; then eval "$(est bash --code)"; fi
 """
 `
 
