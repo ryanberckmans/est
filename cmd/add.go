@@ -1,11 +1,8 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"os"
-	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -30,6 +27,8 @@ Estimates can be provided in minutes "30m", hours "3.5h", days "2d", or weeks
 One week is equal to five days. In future, adherence to business days / hours
 may be configurable.
 
+The start time can be in the past with -a, using the same duration syntax as -e.
+
 Examples:
   # Add an unestimated task named "my new task".
   est a my new task
@@ -45,6 +44,9 @@ Examples:
 
   # Add and start an estimated task.
   est a -e 30m -s add another button
+
+  # Add an estimated task and start it as of one hour ago.
+  est a -e 4h -s -a 1h "this is a four hour task I started an hour ago"
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		name := strings.TrimSpace(strings.Join(args, " "))
@@ -53,7 +55,7 @@ Examples:
 			os.Exit(1)
 			return
 		}
-		estimate, err := parseEstimate(addCmdEstimate)
+		estimate, err := parseDurationHours(addCmdEstimate, "estimate")
 		if err != nil {
 			fmt.Println("fatal: " + err.Error())
 			os.Exit(1)
@@ -67,12 +69,7 @@ Examples:
 				return
 			}
 			if estimate != 0 {
-				// TODO just parse the estimate param into a Duration to begin with
-				d, err := time.ParseDuration(fmt.Sprintf("%fh", estimate))
-				if err != nil {
-					panic(err)
-				}
-				if err := t.SetEstimated(d); err != nil {
+				if err := t.SetEstimated(estimate); err != nil {
 					fmt.Printf("fatal: %v\n", err)
 					os.Exit(1)
 					return
@@ -85,7 +82,8 @@ Examples:
 			}
 			ef.Tasks = append(ef.Tasks, t)
 			if addCmdStartNow {
-				if err := ef.Tasks.Start(len(ef.Tasks)-1, time.Now()); err != nil {
+				startTime := applyFlagAgo(time.Now())
+				if err := ef.Tasks.Start(len(ef.Tasks)-1, startTime); err != nil {
 					fmt.Printf("fatal: %v\n", err)
 					os.Exit(1)
 					return
@@ -104,46 +102,12 @@ Examples:
 	},
 }
 
-var estimateRegexp = regexp.MustCompile(`^([1-9][0-9]*(\.[0-9]*)?|0\.[0-9]+)(m|h|d|w)?$`)
-
-// TODO move into a lib and unit test
-func parseEstimate(e string) (float64, error) {
-	if e == "" {
-		return 0, nil
-	}
-	if !estimateRegexp.MatchString(e) {
-		return 0, errors.New("invalid estimate")
-	}
-	unitMultiplier := 1.0 // default to hours
-	var eWithoutUnit string
-	switch e[len(e)-1:] {
-	case "m":
-		eWithoutUnit = e[:len(e)-1]
-		unitMultiplier = 1 / 60.0 // 1/60 hours in a minute
-	case "h":
-		eWithoutUnit = e[:len(e)-1]
-	case "d":
-		eWithoutUnit = e[:len(e)-1]
-		unitMultiplier = 8 // 8 hours in a day
-	case "w":
-		eWithoutUnit = e[:len(e)-1]
-		unitMultiplier = 8 * 5 // 40 hours in a week
-	default:
-		eWithoutUnit = e
-	}
-
-	f, err := strconv.ParseFloat(eWithoutUnit, 64)
-	if err != nil {
-		return 0, errors.New("estimate wasn't a float")
-	}
-	return f * unitMultiplier, nil
-}
-
 var addCmdEstimate string
 var addCmdStartNow bool
 
 func init() {
 	addCmd.PersistentFlags().StringVarP(&addCmdEstimate, "estimate", "e", "", "estimate new task")
+	addCmd.PersistentFlags().StringVarP(&flagAgo, "ago", "a", "", "when used with start, start duration ago from now")
 	addCmd.PersistentFlags().BoolVarP(&addCmdStartNow, "start", "s", false, "immediately start new task")
 	rootCmd.AddCommand(addCmd)
 }
