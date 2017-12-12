@@ -229,7 +229,14 @@ func RenderTaskOneLineSummary(t *Task) string {
 	case taskStatusDeleted:
 		status = "deleted"
 	case taskStatusDone:
-		status = fmt.Sprintf("done in %.1fh", t.Actual().Hours())
+		if t.Actual() < time.Minute {
+			status = fmt.Sprintf("done in %4.1fs", t.Actual().Seconds())
+		} else if t.Actual() < time.Hour {
+			status = fmt.Sprintf("done in %4.1fm", t.Actual().Minutes())
+		} else {
+			// TODO support inject of business day schedule so we can convert hours into working days as needed.
+			status = fmt.Sprintf("done in %4.1fh", t.Actual().Hours())
+		}
 	case taskStatusStarted:
 		status = "started"
 	case taskStatusEstimated:
