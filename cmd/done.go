@@ -56,6 +56,7 @@ Examples:
 				return
 			}
 			doneTime := applyFlagAgo(time.Now())
+			doFlagLog(ef.Tasks[i], doneTime)
 			if err := ef.Tasks.Done(i, doneTime); err != nil {
 				fmt.Printf("fatal: %v\n", err)
 				os.Exit(1)
@@ -75,6 +76,7 @@ Examples:
 }
 
 func init() {
+	doneCmd.PersistentFlags().StringVarP(&flagLog, "log", "l", "", "log time worked prior to marking this task as done (overrides auto time tracking)")
 	doneCmd.PersistentFlags().StringVarP(&flagAgo, "ago", "a", "", "done duration ago from now")
 	rootCmd.AddCommand(doneCmd)
 }

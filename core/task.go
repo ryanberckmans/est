@@ -132,12 +132,12 @@ func (t *Task) Actual() time.Duration {
 // AddActual logs actual time spent against this task. Most
 // tasks should use auto time tracking. AddActual() provides
 // an escape hatch for auto time tracking edge cases.
-func (t *Task) AddActual(d time.Duration) error {
+func (t *Task) AddActual(d time.Duration, now time.Time) error {
 	if t.IsNeverStarted() {
 		return errors.New("cannot add actual time to a task which has never been started")
 	}
 	t.task.Actual += d
-	t.task.ActualUpdatedAt = time.Now() // TODO it's unclear to me if now should be injected. I.e. for business hours tracking, we typically don't want to consider "nows" outside of business hours. But I don't think that extends to ActualUpdatedAt; I think business hours are completely ignored outside of auto time tracking and this should always just be time.Now().
+	t.task.ActualUpdatedAt = now
 	return nil
 }
 
@@ -338,7 +338,7 @@ func (ts tasks) Done(i int, now time.Time) error {
 	// passage of time for current started tasks must include this
 	// previously started task (so all started tasks tick together).
 	autoAddActual(ts.IsStarted().IsNotDeleted(), now) // IsNotDeleted is sanity because we expect started tasks to never be deleted
-	t.task.ActualUpdatedAt = now
+	// We don't set t.ActualUpdatedAt because it's been set inside autoAddActual() XOR ActualUpdatedAt is in the future and shouldn't be overwritten.
 	t.task.DoneAt = now
 	t.task.IsDone = true
 
@@ -355,7 +355,6 @@ func autoAddActual(ts tasks, end time.Time) {
 		if !ts[i].IsStarted() {
 			panic("sanity: expected ts to be all started")
 		}
-		// fmt.Printf("%+v\n", ts[i].task.ActualUpdatedAt)
 	}
 
 	ts = ts.sortByActualUpdatedAtAscending()
@@ -404,9 +403,10 @@ func autoAddActual(ts tasks, end time.Time) {
 		autoActualShared := autoActual / time.Duration(len(ts2))
 		// fmt.Printf("count=%d lowest=%v nextEnd=%v autoActual=%v autoActualShared=%v end=%v\n", len(ts2), lowest, nextEnd, autoActual, autoActualShared, end)
 		for i := range ts2 {
-			// TODO perhaps AddActual() and this block should share the same code so that we're only ever incrementing actual in one place.
-			ts2[i].task.Actual += autoActualShared
-			ts2[i].task.ActualUpdatedAt = nextEnd
+			err := ts2[i].AddActual(autoActualShared, nextEnd)
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 }

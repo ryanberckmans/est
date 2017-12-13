@@ -7,10 +7,33 @@ import (
 	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/ryanberckmans/est/core"
 )
 
+var flagLog string      // duration of logged time e.g. "30m"
 var flagEstimate string // duration estimate e.g. "2.5h"
 var flagAgo string      // duration ago e.g. "0.5d"
+
+func doFlagLog(t *core.Task, now time.Time) {
+	if flagLog != "" && flagAgo != "" {
+		// --log and --ago may not co-occur because this creates weird auto time tracking issues which, while logically consistent, are probably really confusing to users.
+		fmt.Print("fatal: --log may not be used with --ago\n")
+		os.Exit(1)
+		return
+	}
+	if flagLog == "" {
+		return
+	}
+	d, err := parseDurationHours(flagLog, "log duration")
+	if err != nil {
+		fmt.Printf("fatal: %v\n", err)
+		os.Exit(1)
+		return
+	}
+	t.AddActual(d, now)
+	return
+}
 
 func applyFlagAgo(t time.Time) time.Time {
 	if flagAgo == "" {
