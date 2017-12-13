@@ -23,6 +23,8 @@ Estimates can be provided in hours "3.5h", days "2d", or weeks "0.75w". Defaults
 to hours if unit unspecified. One day is equal to eight hours. One week is equal
 to five days. In future, adherence to business days / hours may be configurable.
 
+The estimate can be provided as second argument or as -e.
+
 Examples:
   # Estimate the task with ID prefix "3c" at 7 hours.
   est e 3c 7
@@ -31,11 +33,15 @@ Examples:
   est e 8d6d9 1.5d
 
   # Estimate the task with ID prefix "94" at 0.25 weeks.
-  est e 94 0.25w
+  est -e 0.25w 94
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+		if flagEstimate != "" && len(args) < 2 {
+			// est estimate can take either <estimate> or --estimate <estimate>
+			args = append(args, flagEstimate)
+		}
 		if len(args) != 2 {
-			fmt.Println("usage: est estimate <task ID prefix> <estimate>")
+			fmt.Println("usage: est estimate <task ID prefix> [-e] <estimate>")
 			os.Exit(1)
 			return
 		}
@@ -62,6 +68,7 @@ Examples:
 				os.Exit(1)
 				return
 			}
+			fmt.Println(core.RenderTaskOneLineSummary(ef.Tasks[i]))
 		}, func() {
 			// failed to load estconfig or estfile. Err printed elsewhere.
 			os.Exit(1)
@@ -70,5 +77,6 @@ Examples:
 }
 
 func init() {
+	estimateCmd.PersistentFlags().StringVarP(&flagEstimate, "estimate", "e", "", "estimate task")
 	rootCmd.AddCommand(estimateCmd)
 }

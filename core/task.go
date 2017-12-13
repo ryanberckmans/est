@@ -346,6 +346,7 @@ func (ts tasks) Done(i int, now time.Time) error {
 }
 
 // TODO unit tests
+// TODO NEXT UP - handle business hours
 func autoAddActual(ts tasks, end time.Time) {
 	if len(ts) < 1 {
 		return
