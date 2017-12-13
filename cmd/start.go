@@ -54,6 +54,7 @@ Examples:
 				os.Exit(1)
 				return
 			}
+			doFlagLog(ef.Tasks[i], startTime)
 			if err := ef.Write(); err != nil {
 				fmt.Printf("fatal: %v\n", err)
 				os.Exit(1)
@@ -68,6 +69,7 @@ Examples:
 }
 
 func init() {
+	startCmd.PersistentFlags().StringVarP(&flagLog, "log", "l", "", "log time worked after starting this task")
 	startCmd.PersistentFlags().StringVarP(&flagAgo, "ago", "a", "", "start duration ago from now")
 	rootCmd.AddCommand(startCmd)
 }
