@@ -9,7 +9,8 @@ import (
 	"time"
 )
 
-var flagAgo string
+var flagEstimate string // duration estimate e.g. "2.5h"
+var flagAgo string      // duration ago e.g. "0.5d"
 
 func applyFlagAgo(t time.Time) time.Time {
 	if flagAgo == "" {

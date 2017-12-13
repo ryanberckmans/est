@@ -16,7 +16,7 @@ var addCmd = &cobra.Command{
 	Short:   "Add a task",
 	Long: `Add a new task
 
-est add [(-e | --estimate) <estimate>] [--start] <task name>
+est add <task name>
 
 The new task name is the concatenation of all non-flag args, no quotes required.
 An estimate can be provided with -e, otherwise the new task will be unestimated.
@@ -55,7 +55,7 @@ Examples:
 			os.Exit(1)
 			return
 		}
-		estimate, err := parseDurationHours(addCmdEstimate, "estimate")
+		estimate, err := parseDurationHours(flagEstimate, "estimate")
 		if err != nil {
 			fmt.Println("fatal: " + err.Error())
 			os.Exit(1)
@@ -102,11 +102,10 @@ Examples:
 	},
 }
 
-var addCmdEstimate string
 var addCmdStartNow bool
 
 func init() {
-	addCmd.PersistentFlags().StringVarP(&addCmdEstimate, "estimate", "e", "", "estimate new task")
+	addCmd.PersistentFlags().StringVarP(&flagEstimate, "estimate", "e", "", "estimate new task")
 	addCmd.PersistentFlags().StringVarP(&flagAgo, "ago", "a", "", "when used with start, start duration ago from now")
 	addCmd.PersistentFlags().BoolVarP(&addCmdStartNow, "start", "s", false, "immediately start new task")
 	rootCmd.AddCommand(addCmd)
