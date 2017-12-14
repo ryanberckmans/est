@@ -19,9 +19,10 @@ est estimate <task ID prefix> <estimate>
 Change the estimate on an existing task. To specify the task to estimate, use a
 prefix of the task ID shown in 'est ls'.
 
-Estimates can be provided in hours "3.5h", days "2d", or weeks "0.75w". Defaults
-to hours if unit unspecified. One day is equal to eight hours. One week is equal
-to five days. In future, adherence to business days / hours may be configurable.
+Estimates can be provided in minutes "30m", hours "3.5h", days "2d", or weeks
+"0.75w". Defaults to hours if unit unspecified. One day is equal to eight hours.
+One week is equal to five days. In future, adherence to business days / hours
+may be configurable.
 
 The estimate can be provided as second argument or as -e.
 
