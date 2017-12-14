@@ -1,6 +1,7 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"sort"
@@ -12,10 +13,195 @@ import (
 // TODO probability mass function = pmf :: []Date -> map[Date]float64 s.t. 0 <= pmf(ds)[i] <= 1 && sum_i pmf(ds)[i] == 1   --> or, type DateChance struct, []DateChance
 // TODO probability density function
 
+/*
+	WorkTimes
+		init(times []string, d map[time.Weekday] bool) // list of (start,end) times where start_i < end_i < start_{i+1}; times are "3:04pm", all times local
+
+		init()
+			c := NewCal
+			set all workdays to false in c
+			set workdays in c using passed map
+
+		GetWorkTimesOnDay(time.Time) []time.Time // returns working start/end times on the day of the passed time, nil if passed time isn't a workday. Guaranteed that len([]time.Time) % 2 == 0, and that these times have monotonically increasing hour:minute in local time on day of passed time.
+*/
+
+// NEXT UP - impl workTimes/GetWorkTimesOnDay(), unit tests
+type WorkTimes interface {
+	GetWorkTimesOnDay(t time.Time) []time.Time
+}
+
+type workTimes struct {
+	// calendar owns whether or not a given day is a workday
+	calendar *cal.Calendar
+
+	// workHours owns whether or not a given block of time during a work day is working hours
+	workHours []time.Time // workHours must be even length with monotonically increasing time of day. This is enforced during construction. Only hour and minute of these times are defined: the hour and minute are used to construct specific workdays in GetWorkTimesOnDay().
+	// TODO if we wanted to support different working hours for different days of the week, this is achievable by making workhours []string --> map[time.Weekday]string
+}
+
+// returns working start/end times on the day of the passed time, nil if passed time isn't a workday. Guaranteed that len([]time.Time) % 2 == 0, and that these times have monotonically increasing hour:minute in local time on day of passed time.
+// TODO unit test
+func (w *workTimes) GetWorkTimesOnDay(t time.Time) []time.Time {
+	if !w.calendar.IsWorkday(t) {
+		return nil
+	}
+	return getTimesOnDay(w.workHours, t)
+}
+
+// TODO doc, unit test, maybe rename
+func getTimesOnDay(ts []time.Time, t time.Time) []time.Time {
+	ts2 := make([]time.Time, len(ts))
+	for i, t2 := range ts {
+		ts2[i] = time.Date(t.Year(), t.Month(), t.Day(), t2.Hour(), t2.Minute(), 0, 0, t.Location())
+	}
+	return ts2
+}
+
+// TODO WorkTimes package
+func New(workdays map[time.Weekday]bool, workhours []string) (WorkTimes, error) {
+	ts, err := parseWorkHours(workhours)
+	if err != nil {
+		return nil, fmt.Errorf("new WorkTimes failed: %s", err.Error())
+	}
+	c := cal.NewCalendar()
+	c.SetWorkday(time.Sunday, false)
+	c.SetWorkday(time.Monday, false)
+	c.SetWorkday(time.Tuesday, false)
+	c.SetWorkday(time.Wednesday, false)
+	c.SetWorkday(time.Thursday, false)
+	c.SetWorkday(time.Friday, false)
+	c.SetWorkday(time.Saturday, false)
+	for workday, isWorkday := range workdays {
+		c.SetWorkday(workday, isWorkday)
+	}
+	return &workTimes{calendar: c, workHours: ts}, nil
+}
+
+// TODO doc workhours hh:mm(am|pm), non-zero even number, monotonically increasing
+// TODO unit test
+func parseWorkHours(workhours []string) ([]time.Time, error) {
+	if len(workhours) == 0 {
+		return nil, errors.New("work hours was empty and must be non-zero even length and monotonically increasing")
+	}
+	if len(workhours)%2 == 1 {
+		return nil, errors.New("work hours was odd length and must be non-zero even length and monotonically increasing")
+	}
+
+	ts := make([]time.Time, len(workhours))
+	for i := range workhours {
+		t, err := time.Parse("3:04pm", workhours[i])
+		if err != nil {
+			return nil, err
+		}
+		ts[i] = t
+	}
+
+	for i := 1; i < len(ts); i++ {
+		if !ts[i-1].Before(ts[i]) {
+			return nil, fmt.Errorf("work hours must be monotonically increasing, workhours[%d]==%s was not before workhours[%d]==%s", i-1, workhours[i-1], i, workhours[i])
+		}
+	}
+
+	return ts, nil
+}
+
+// Return start of day for passed time, in local time.
+func startOfDay(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+}
+
+// Return end of day for passed time, in local time.
+func endOfDay(t time.Time) time.Time {
+	return startOfDay(t.AddDate(0, 0, 1)).Add(-time.Nanosecond)
+}
+
+func businessHoursBetweenTimesOnSameDay(start, end time.Time) time.Duration {
+	if end.Before(start) {
+		tmp := start
+		start = end
+		end = tmp
+	}
+	if !(start.Year() == end.Year() && start.YearDay() == end.YearDay()) {
+		panic("expected start and end on same day")
+	}
+	// TODO pass WorkTimes
+	ts := []time.Time{} // workTimes.GetWorkTimesOnDay(start)
+	if len(ts) < 1 {
+		// passed day is not a workday
+		return 0
+	}
+	d := time.Duration(0)
+	s2 := start
+	for i := 0; i*2+1 < len(ts); i++ {
+		if s2.Before(ts[i*2]) {
+			// s2 was in non working hours, advance it to next working hour start
+			s2 = ts[i*2]
+		}
+		if end.Before(ts[i*2+1]) {
+			// end is prior to the end of this working time block
+			return d + end.Sub(s2)
+		}
+		d += ts[i*2+1].Sub(s2)
+	}
+	return d
+}
+
+func businessHoursBetweenTimes(start, end time.Time) time.Duration {
+	if end.Before(start) {
+		tmp := start
+		start = end
+		end = tmp
+	}
+	// Assume we work 9:30am-5:30pm local time M-F. TODO configurable business hours, workdays, business holidays, vacation
+	// c := cal.NewCalendar()
+	// TODO allow multiple business day start/end, e.g. someone who works 9-1pm and 6-8pm daily
+	// businessDayStart := time.ParseInLocation("3:04pm", "9:30am", time.Now().Location())
+	// businessDayEnd := time.ParseInLocation("3:04pm", "5:30pm", time.Now().Location())
+	d := time.Duration(0) // accumulated business hours between start and end
+	s2 := start
+	for {
+		if s2.Year() == end.Year() && s2.YearDay() == end.YearDay() {
+			return d + businessHoursBetweenTimesOnSameDay(s2, end)
+		}
+		d += businessHoursBetweenTimesOnSameDay(s2, endOfDay(s2))
+		s2 = startOfDay(s2.AddDate(0, 0, 1))
+	}
+	// for {
+	// 	// Two cases:
+	// 	// 1. start and end are same day (in local time)
+	// 	// 2. they are not same day
+	//
+	// 	if start.Year() == end.Year() && start.YearDay() == end.YearDay() {
+	// 		// ts := workTimes.GetWorkTimesOnDay(start)
+	// 		// TODO then, accumulate duration based on start, end, ts
+	//
+	// 		// if !c.IsWorkday(start) {
+	// 		// 	// start and end are same non-workday
+	// 		// 	return d
+	// 		// }
+	// 		/*
+	// 			NEXT UP
+	// 				make a "thisBusinessDayStart" with same day/year/timezone as start,
+	// 		*/
+	// 		// time before business day start is ignored
+	// 		h, m, s := start.Clock()
+	// 		bh, bm, bs := businessDayStart.Clock()
+	// 		bh, bm, bs := businessDayEnd.Clock()
+	//
+	// 	}
+	//
+	// 	// TODO handle case 2.
+	// 	/*
+	// 		observation: case 2 is case 1 with end==end of the day
+	// 	*/
+	// 	return 0
+	// }
+}
+
 // TODO unit test
 func futureBusinessHoursToTime(bhs []float64) []time.Time {
 	c := cal.NewCalendar()
-	// TODO add Bread office holidays, configurable vacation, etc.
+	// Assume we work M-F. TODO configurable business hours, workdays, business holidays, vacation
 	ts := make([]time.Time, len(bhs))
 	now := time.Now() // TODO inject now
 	for i := range bhs {
@@ -26,6 +212,7 @@ func futureBusinessHoursToTime(bhs []float64) []time.Time {
 
 // TODO unit test
 func businessHoursToDays(h float64) int {
+	// Assume we work 8 hours per day. TODO configurable business hours, workdays, business holidays, vacation
 	businessHoursInAday := 8.0
 	d := 0
 	for h > businessHoursInAday {
