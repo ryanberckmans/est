@@ -10,15 +10,27 @@ import (
 )
 
 var scheduleCmd = &cobra.Command{
-	Use:     "schedule",
-	Aliases: []string{"c"},
-	Short:   "Display a probabilistic schedule for unstarted, estimated tasks",
+	Use:   "schedule",
+	Short: "Display a probabilistic schedule for unstarted, estimated tasks",
 	Long: `Display a probabilistic schedule for unstarted, estimated tasks.
 
 The schedule predicts the date on which all tasks will be delivered.
 
-The prediction is based on a monte carlo simulation of how long future tasks will
-actually take, based on personalized accuracy of historical task estimates.`,
+The prediction is based on a monte carlo simulation of how long future tasks
+will actually take, based on personalized accuracy of historical task estimates.
+
+The prediction is most accurate when most of your tasks' estimated and actual
+hours are under 16 hours; your history of done tasks numbers in the dozens;
+and you track the majority of your working time in est.
+
+The prediction is most useful if your expected future tasks are estimated in
+est, because those are the tasks predicted by 'est schedule'. If many of your
+future tasks are not estimated in est, or the tasks estimated in est are never
+actually worked on, then the usefulness of 'est schedule' will be reduced.
+
+In future, 'est schedule' should allow selection of tasks to estimate, e.g.
+all tasks related to one project, and merging of estfiles for team scheduling.
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runSchedule()
 	},
