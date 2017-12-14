@@ -19,6 +19,9 @@ The schedule predicts the date on which all tasks will be delivered.
 The prediction is based on a monte carlo simulation of how long future tasks
 will actually take, based on personalized accuracy of historical task estimates.
 
+Personalized historical task estimates are partially faked if less than twenty
+tasks are done.
+
 The prediction is most accurate when most of your tasks' estimated and actual
 hours are under 16 hours; your history of done tasks numbers in the dozens;
 and you track the majority of your working time in est.
