@@ -21,13 +21,19 @@ func init() {
 	// TODO construct WorkTimes from estconfig
 	var err error
 	globalWorkTimes, err = core.New(map[time.Weekday]bool{
-		time.Monday: true,
-		time.Friday: true,
+		time.Monday:    true,
+		time.Tuesday:   true,
+		time.Wednesday: true,
+		time.Thursday:  true,
+		time.Friday:    true,
 	}, []string{
-		"8:00am",
-		"10:00am",
+		// Work 9:30am-noon
+		"9:30am",
 		"12:00pm",
-		"5:00pm",
+		// 30 minutes for lunch, then work 12:30pm-5:30pm
+		"12:30pm",
+		"5:30pm",
+		// Time on tasks outside of these times will not count towards automatic time tracking. This doesn't mean no work occurs outside of these times, it just means the estimator isn't penalized (by additional auto time tracking duration) for not making progress during non-working hours. `est log` can also be used as an escape hatch, e.g. for a 3h project on a Saturday.
 	})
 	if err != nil {
 		fmt.Println("fatal: " + err.Error())
