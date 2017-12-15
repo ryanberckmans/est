@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/ryanberckmans/est/core"
+	"github.com/ryanberckmans/est/core/worktimes"
 	"github.com/spf13/cobra"
 )
 
@@ -15,12 +15,12 @@ var rootCmd = &cobra.Command{
 	Long:  `est is a command-line tool for software estimation.`,
 }
 
-var globalWorkTimes core.WorkTimes
+var globalWorkTimes worktimes.WorkTimes
 
 func init() {
 	// TODO construct WorkTimes from estconfig
 	var err error
-	globalWorkTimes, err = core.New(map[time.Weekday]bool{
+	globalWorkTimes, err = worktimes.New(map[time.Weekday]bool{
 		time.Monday:    true,
 		time.Tuesday:   true,
 		time.Wednesday: true,

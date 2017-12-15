@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/ryanberckmans/est/core/worktimes"
 )
 
 type tasks []*Task
@@ -299,7 +300,7 @@ func toUnexportedTasks(ts tasks) []task {
 // relative to a set of tasks, so that multiple tasks in progress share the
 // passage of time.
 // TODO what is signature of start? We must consider at least an injected time.Now() and also business hours to consider for auto time tracking.
-func (ts tasks) Start(wt WorkTimes, i int, now time.Time) error {
+func (ts tasks) Start(wt worktimes.WorkTimes, i int, now time.Time) error {
 	t := ts[i]
 	if t.IsDeleted() {
 		return errors.New("cannot start deleted task")
@@ -323,7 +324,7 @@ func (ts tasks) Start(wt WorkTimes, i int, now time.Time) error {
 }
 
 // Mark the ith task of tasks as done. See note on Start().
-func (ts tasks) Done(wt WorkTimes, i int, now time.Time) error {
+func (ts tasks) Done(wt worktimes.WorkTimes, i int, now time.Time) error {
 	t := ts[i]
 	if !t.IsStarted() {
 		return errors.New("cannot mark done a task which isn't started")
@@ -346,7 +347,7 @@ func (ts tasks) Done(wt WorkTimes, i int, now time.Time) error {
 }
 
 // TODO unit tests
-func autoAddActual(wt WorkTimes, ts tasks, end time.Time) {
+func autoAddActual(wt worktimes.WorkTimes, ts tasks, end time.Time) {
 	if len(ts) < 1 {
 		return
 	}
