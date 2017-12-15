@@ -49,7 +49,7 @@ Examples:
 				return
 			}
 			startTime := applyFlagAgo(time.Now())
-			if err := ef.Tasks.Start(i, startTime); err != nil {
+			if err := ef.Tasks.Start(globalWorkTimes, i, startTime); err != nil {
 				fmt.Printf("fatal: %v\n", err)
 				os.Exit(1)
 				return

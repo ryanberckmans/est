@@ -299,7 +299,7 @@ func toUnexportedTasks(ts tasks) []task {
 // relative to a set of tasks, so that multiple tasks in progress share the
 // passage of time.
 // TODO what is signature of start? We must consider at least an injected time.Now() and also business hours to consider for auto time tracking.
-func (ts tasks) Start(i int, now time.Time) error {
+func (ts tasks) Start(wt WorkTimes, i int, now time.Time) error {
 	t := ts[i]
 	if t.IsDeleted() {
 		return errors.New("cannot start deleted task")
@@ -314,7 +314,7 @@ func (ts tasks) Start(i int, now time.Time) error {
 	// Auto track time against current tasks in progress. This must be done prior to
 	// starting i'th task, because shared passage of time for current started tasks
 	// must exclude this newly started task (as it wasn't auto ticking until now).
-	autoAddActual(ts.IsStarted().IsNotDeleted(), now) // IsNotDeleted is sanity because we expect started tasks to never be deleted
+	autoAddActual(wt, ts.IsStarted().IsNotDeleted(), now) // IsNotDeleted is sanity because we expect started tasks to never be deleted
 	t.task.ActualUpdatedAt = now
 	t.task.StartedAt = now
 	t.task.IsDone = false
@@ -323,7 +323,7 @@ func (ts tasks) Start(i int, now time.Time) error {
 }
 
 // Mark the ith task of tasks as done. See note on Start().
-func (ts tasks) Done(i int, now time.Time) error {
+func (ts tasks) Done(wt WorkTimes, i int, now time.Time) error {
 	t := ts[i]
 	if !t.IsStarted() {
 		return errors.New("cannot mark done a task which isn't started")
@@ -337,7 +337,7 @@ func (ts tasks) Done(i int, now time.Time) error {
 	// be done prior to marking done the i'th task, because shared
 	// passage of time for current started tasks must include this
 	// previously started task (so all started tasks tick together).
-	autoAddActual(ts.IsStarted().IsNotDeleted(), now) // IsNotDeleted is sanity because we expect started tasks to never be deleted
+	autoAddActual(wt, ts.IsStarted().IsNotDeleted(), now) // IsNotDeleted is sanity because we expect started tasks to never be deleted
 	// We don't set t.ActualUpdatedAt because it's been set inside autoAddActual() XOR ActualUpdatedAt is in the future and shouldn't be overwritten.
 	t.task.DoneAt = now
 	t.task.IsDone = true
@@ -346,8 +346,7 @@ func (ts tasks) Done(i int, now time.Time) error {
 }
 
 // TODO unit tests
-// !! TODO NEXT UP - handle business hours
-func autoAddActual(ts tasks, end time.Time) {
+func autoAddActual(wt WorkTimes, ts tasks, end time.Time) {
 	if len(ts) < 1 {
 		return
 	}
@@ -399,7 +398,7 @@ func autoAddActual(ts tasks, end time.Time) {
 		// We'll now tick ts2 in shared passage of time. ts2's start time is
 		// the same and lowest of ts. nextEnd is the next lowest time after ts2.
 
-		autoActual := businessHoursBetweenTimes(lowest, nextEnd) // auto time tracking includes business hours only, otherwise weekends, sleep, etc., would count as time on task.
+		autoActual := businessHoursBetweenTimes(wt, lowest, nextEnd) // auto time tracking includes business hours only, otherwise weekends, sleep, etc., would count as time on task.
 		autoActualShared := autoActual / time.Duration(len(ts2))
 		// fmt.Printf("count=%d lowest=%v nextEnd=%v autoActual=%v autoActualShared=%v end=%v\n", len(ts2), lowest, nextEnd, autoActual, autoActualShared, end)
 		for i := range ts2 {

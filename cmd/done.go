@@ -57,7 +57,7 @@ Examples:
 			}
 			doneTime := applyFlagAgo(time.Now())
 			doFlagLog(ef.Tasks[i], doneTime)
-			if err := ef.Tasks.Done(i, doneTime); err != nil {
+			if err := ef.Tasks.Done(globalWorkTimes, i, doneTime); err != nil {
 				fmt.Printf("fatal: %v\n", err)
 				os.Exit(1)
 				return
