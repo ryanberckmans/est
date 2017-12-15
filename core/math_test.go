@@ -45,12 +45,13 @@ func TestBusinessHoursBetweenTimes(t *testing.T) {
 		/*
 			end < start, they are swapped
 			start and end
+			end == start
 		*/
 	}
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.expectedDuration, businessHoursBetweenTimes(tc.start, tc.end))
+			assert.Equal(t, tc.expectedDuration, businessHoursBetweenTimes(nil, tc.start, tc.end))
 		})
 	}
 }

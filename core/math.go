@@ -25,7 +25,7 @@ import (
 		GetWorkTimesOnDay(time.Time) []time.Time // returns working start/end times on the day of the passed time, nil if passed time isn't a workday. Guaranteed that len([]time.Time) % 2 == 0, and that these times have monotonically increasing hour:minute in local time on day of passed time.
 */
 
-// NEXT UP - impl workTimes/GetWorkTimesOnDay(), unit tests
+// TODO WorkTimes package or even own repo
 type WorkTimes interface {
 	GetWorkTimesOnDay(t time.Time) []time.Time
 }
@@ -37,6 +37,7 @@ type workTimes struct {
 	// workHours owns whether or not a given block of time during a work day is working hours
 	workHours []time.Time // workHours must be even length with monotonically increasing time of day. This is enforced during construction. Only hour and minute of these times are defined: the hour and minute are used to construct specific workdays in GetWorkTimesOnDay().
 	// TODO if we wanted to support different working hours for different days of the week, this is achievable by making workhours []string --> map[time.Weekday]string
+	// TODO Calendar has a pretty nifty holidays interface: support holidays, vacation
 }
 
 // returns working start/end times on the day of the passed time, nil if passed time isn't a workday. Guaranteed that len([]time.Time) % 2 == 0, and that these times have monotonically increasing hour:minute in local time on day of passed time.
@@ -115,17 +116,15 @@ func endOfDay(t time.Time) time.Time {
 	return startOfDay(t.AddDate(0, 0, 1)).Add(-time.Nanosecond)
 }
 
-func businessHoursBetweenTimesOnSameDay(start, end time.Time) time.Duration {
+func businessHoursBetweenTimesOnSameDay(wt WorkTimes, start, end time.Time) time.Duration {
 	if end.Before(start) {
-		tmp := start
-		start = end
-		end = tmp
+		return businessHoursBetweenTimesOnSameDay(wt, end, start)
 	}
 	if !(start.Year() == end.Year() && start.YearDay() == end.YearDay()) {
 		panic("expected start and end on same day")
 	}
-	// TODO pass WorkTimes
-	ts := []time.Time{} // workTimes.GetWorkTimesOnDay(start)
+	ts := wt.GetWorkTimesOnDay(start)
+	// fmt.Printf("OnSameDay start=%v end=%v wts=%+v\n", start, end, ts)
 	if len(ts) < 1 {
 		// passed day is not a workday
 		return 0
@@ -133,69 +132,51 @@ func businessHoursBetweenTimesOnSameDay(start, end time.Time) time.Duration {
 	d := time.Duration(0)
 	s2 := start
 	for i := 0; i*2+1 < len(ts); i++ {
+		if end.Before(ts[i*2]) {
+			// end is prior to the start of this working time block,
+			// no more working hours can be accumulated today.
+			// fmt.Printf("OnSameDay s2=%v workstart=%v workend=%v duration=%v\n", s2, ts[i*2], ts[i*2+i], d)
+			break
+		}
 		if s2.Before(ts[i*2]) {
 			// s2 was in non working hours, advance it to next working hour start
 			s2 = ts[i*2]
 		}
 		if end.Before(ts[i*2+1]) {
 			// end is prior to the end of this working time block
+			// fmt.Printf("OnSameDay s2=%v workstart=%v workend=%v duration=%v\n", s2, ts[i*2], ts[i*2+i], d+end.Sub(s2))
 			return d + end.Sub(s2)
 		}
 		d += ts[i*2+1].Sub(s2)
+		// fmt.Printf("OnSameDay s2=%v workstart=%v workend=%v duration=%v\n", s2, ts[i*2], ts[i*2+i], d)
 	}
 	return d
 }
 
-func businessHoursBetweenTimes(start, end time.Time) time.Duration {
+// TODO doc, finish unit tests.
+func businessHoursBetweenTimes(wt WorkTimes, start, end time.Time) time.Duration {
 	if end.Before(start) {
-		tmp := start
-		start = end
-		end = tmp
+		return businessHoursBetweenTimes(wt, end, start)
 	}
-	// Assume we work 9:30am-5:30pm local time M-F. TODO configurable business hours, workdays, business holidays, vacation
-	// c := cal.NewCalendar()
-	// TODO allow multiple business day start/end, e.g. someone who works 9-1pm and 6-8pm daily
-	// businessDayStart := time.ParseInLocation("3:04pm", "9:30am", time.Now().Location())
-	// businessDayEnd := time.ParseInLocation("3:04pm", "5:30pm", time.Now().Location())
+	// Business hours are relative to a specific timezone; we assume local time.
+	if start.Location() != time.Local {
+		return businessHoursBetweenTimes(wt, start.Local(), end)
+	}
+	if end.Location() != time.Local {
+		return businessHoursBetweenTimes(wt, start, end.Local())
+	}
+	// fmt.Printf("businessHoursBetweenTimes start=%v end=%v\n", start, end)
 	d := time.Duration(0) // accumulated business hours between start and end
 	s2 := start
 	for {
 		if s2.Year() == end.Year() && s2.YearDay() == end.YearDay() {
-			return d + businessHoursBetweenTimesOnSameDay(s2, end)
+			// fmt.Printf("on same day s2=%v end=%v\n", s2, end)
+			return d + businessHoursBetweenTimesOnSameDay(wt, s2, end)
 		}
-		d += businessHoursBetweenTimesOnSameDay(s2, endOfDay(s2))
+		// fmt.Printf("not on same day same day s2=%v end=%v\n", s2, end)
+		d += businessHoursBetweenTimesOnSameDay(wt, s2, endOfDay(s2))
 		s2 = startOfDay(s2.AddDate(0, 0, 1))
 	}
-	// for {
-	// 	// Two cases:
-	// 	// 1. start and end are same day (in local time)
-	// 	// 2. they are not same day
-	//
-	// 	if start.Year() == end.Year() && start.YearDay() == end.YearDay() {
-	// 		// ts := workTimes.GetWorkTimesOnDay(start)
-	// 		// TODO then, accumulate duration based on start, end, ts
-	//
-	// 		// if !c.IsWorkday(start) {
-	// 		// 	// start and end are same non-workday
-	// 		// 	return d
-	// 		// }
-	// 		/*
-	// 			NEXT UP
-	// 				make a "thisBusinessDayStart" with same day/year/timezone as start,
-	// 		*/
-	// 		// time before business day start is ignored
-	// 		h, m, s := start.Clock()
-	// 		bh, bm, bs := businessDayStart.Clock()
-	// 		bh, bm, bs := businessDayEnd.Clock()
-	//
-	// 	}
-	//
-	// 	// TODO handle case 2.
-	// 	/*
-	// 		observation: case 2 is case 1 with end==end of the day
-	// 	*/
-	// 	return 0
-	// }
 }
 
 // TODO unit test
