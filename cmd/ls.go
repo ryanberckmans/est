@@ -17,8 +17,6 @@ var lsCmd = &cobra.Command{
 	},
 }
 
-// TODO ls to allow filtering by status. Thought is to show started and unestimated tasks by default. Also have an --all option to simplify showing everything.
-
 func doLS() {
 	core.WithEstConfigAndFile(func(ec *core.EstConfig, ef *core.EstFile) {
 		ts := ef.Tasks.SortByStatusDescending().IsNotDeleted()
@@ -34,5 +32,7 @@ func doLS() {
 }
 
 func init() {
+	// TODO --done to show done tasks, default to not showing done
+	// TODO --deleted to show deleted tasks, default does not show deleted
 	rootCmd.AddCommand(lsCmd)
 }
