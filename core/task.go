@@ -208,43 +208,42 @@ const (
 
 // RenderTaskOneLineSummary returns a string rendering of passed task
 // suitable to be included in a one-task-per-line output to user.
-func RenderTaskOneLineSummary(t *Task) string {
-	idPrefix := t.task.ID.String()[0:5]      // TODO dynamic length of ID prefix based on uniqueness of all task IDs. (Inject IDPrefixLen)
-	_, month, day := t.task.CreatedAt.Date() // TODO this should be "last updated at"; maybe we have actually an UpdatedAt or dynamically select from latest of the dates
-	estimate := t.Estimated().Hours()        // TODO this should be nice format "12h, 2d"; maybe represent estimate as a Duration
-	// TODO replace with something nice, also use ShortName/Summary
-	nameFixedWidth := 12
-	lenRemaining := nameFixedWidth - len(t.task.Name)
-	var name string
-	if lenRemaining > 0 {
-		name = t.task.Name
-		for ; lenRemaining > 0; lenRemaining-- {
-			name += " "
-		}
-	} else {
-		name = t.task.Name[:nameFixedWidth]
-	}
-
-	status := "unestimated" // TODO danger orange in colors package :)
+func RenderTaskOneLineSummary(t *Task, includeHeaders bool) string {
+	var status string
 	switch t.status() {
 	case taskStatusDeleted:
-		status = "deleted"
+		_, month, day := t.DeletedAt().Date()
+		status = fmt.Sprintf("deleted on %d/%d", month, day)
 	case taskStatusDone:
+		_, month, day := t.DoneAt().Date()
 		if t.Actual() < time.Minute {
-			status = fmt.Sprintf("done in %4.1fs", t.Actual().Seconds())
+			status = fmt.Sprintf("done in %.1fs on %d/%d", t.Actual().Seconds(), month, day)
 		} else if t.Actual() < time.Hour {
-			status = fmt.Sprintf("done in %4.1fm", t.Actual().Minutes())
+			status = fmt.Sprintf("done in %.1fm on %d/%d", t.Actual().Minutes(), month, day)
 		} else {
-			// TODO support inject of business day schedule so we can convert hours into working days as needed.
-			status = fmt.Sprintf("done in %4.1fh", t.Actual().Hours())
+			status = fmt.Sprintf("done in %.1fh on %d/%d", t.Actual().Hours(), month, day)
 		}
 	case taskStatusStarted:
-		status = "started"
+		_, month, day := t.StartedAt().Date()
+		status = fmt.Sprintf("started on %d/%d", month, day)
 	case taskStatusEstimated:
-		status = "estimated"
+		_, month, day := t.EstimatedAt().Date()
+		status = fmt.Sprintf("estimated on %d/%d", month, day)
+	default:
+		_, month, day := t.CreatedAt().Date()
+		status = fmt.Sprintf("unestimated on %d/%d", month, day) // TODO danger orange in colors package :)
 	}
-
-	return fmt.Sprintf("%s\t%d/%d\t%.1fh\t%s\t%s", idPrefix, month, day, estimate, name, status)
+	var headers string
+	if includeHeaders {
+		headers = "ID\tEstimate\tStatus\t\t\t\tName\n"
+	}
+	return fmt.Sprintf("%s%s\t%.1fh\t\t%s\t\t%s",
+		headers,
+		t.task.ID.String()[0:5], // TODO dynamic length of ID prefix based on uniqueness of all task IDs. (Inject IDPrefixLen)
+		t.Estimated().Hours(),
+		status,
+		t.Name(), // t.Name() has arbitrary length and so is last
+	)
 }
 
 // task is the unit of estimation for est. Users estimate and do
@@ -299,7 +298,6 @@ func toUnexportedTasks(ts tasks) []task {
 // auto time tracking is updated for all started tasks. Auto time tracking is
 // relative to a set of tasks, so that multiple tasks in progress share the
 // passage of time.
-// TODO what is signature of start? We must consider at least an injected time.Now() and also business hours to consider for auto time tracking.
 func (ts tasks) Start(wt worktimes.WorkTimes, i int, now time.Time) error {
 	t := ts[i]
 	if t.IsDeleted() {
