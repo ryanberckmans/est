@@ -36,7 +36,7 @@ from 9am to 10am during working hours, then each task will receive half the
 elapsed duration, which is thirty minutes.
 
 The time at which a task is marked done can be in the past with -a, using the
-same duration syntax as the estimate command.
+same duration syntax as 'est estimate'.
 
 The (estimated hours, actual hours) for done tasks are used as data points to
 predict delivery schedule of future tasks in 'est schedule'.

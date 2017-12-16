@@ -53,7 +53,7 @@ func applyFlagAgo(t time.Time) time.Time {
 	return t.Add(-ago)
 }
 
-var durationHoursRegexp = regexp.MustCompile(`^([1-9][0-9]*(\.[0-9]*)?|0\.[0-9]+)(m|h|d|w)?$`)
+var durationHoursRegexp = regexp.MustCompile(`^([1-9][0-9]*(\.[0-9]*)?|0\.[0-9]+)(m|h)$`)
 
 // TODO unit test
 func parseDurationHours(e string, name string) (time.Duration, error) {
@@ -61,7 +61,7 @@ func parseDurationHours(e string, name string) (time.Duration, error) {
 		return 0, nil
 	}
 	if !durationHoursRegexp.MatchString(e) {
-		return 0, errors.New("invalid " + name)
+		return 0, errors.New("invalid " + name + ". For example, \"1.5h\", \"0.5h\", or \"90m\".")
 	}
 	unitMultiplier := 1.0 // default to hours
 	var eWithoutUnit string
@@ -71,14 +71,8 @@ func parseDurationHours(e string, name string) (time.Duration, error) {
 		unitMultiplier = 1 / 60.0 // 1/60 hours in a minute
 	case "h":
 		eWithoutUnit = e[:len(e)-1]
-	case "d":
-		eWithoutUnit = e[:len(e)-1]
-		unitMultiplier = 8 // 8 hours in a day
-	case "w":
-		eWithoutUnit = e[:len(e)-1]
-		unitMultiplier = 8 * 5 // 40 hours in a week
 	default:
-		eWithoutUnit = e
+		panic("expected estimate to end in 'm' or 'h' due to durationHoursRegexp")
 	}
 
 	f, err := strconv.ParseFloat(eWithoutUnit, 64)

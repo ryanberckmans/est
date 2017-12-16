@@ -36,22 +36,18 @@ logged durations will be added to the task's actual hours.
 'est add', 'est start', and 'est done' take --log which can be used to
 avoid running 'est log' directly.
 
-The logged duration can be provided in minutes "30m", hours "3.5h", days "2d",
-or weeks "0.75w". Defaults to hours if unit unspecified. One day is equal to
-eight hours. One week is equal to five days. In future, adherence to business
-days / hours may be configurable.
-
-The logged duration can be provided as second argument or as -l.
+The logged duration uses the same syntax as 'est estimate', and can be provided
+as second argument or as -l.
 
 Examples:
   # Log 7 hours worked on the task with ID prefix "3c".
   est l 3c 7h
 
-  # Log 1.5 days worked on the task with ID prefix "8d6d9".
-  est l 8d6d9 1.5d
+  # Log 45 minutes worked on the task with ID prefix "8d6d9".
+  est l 8d6d9 45m
 
-  # Log 90 minutes worked on the task with ID prefix "94".
-  est -l 90m 94
+  # Log 45 minutes worked on the task with ID prefix "94".
+  est -l 0.75h 94
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		if flagLog == "" && len(args) > 1 {

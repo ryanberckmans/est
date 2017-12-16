@@ -19,22 +19,22 @@ est estimate <task ID prefix> <estimate>
 Change the estimate on an existing task. To specify the task to estimate, use a
 prefix of the task ID shown in 'est ls'.
 
-Estimates can be provided in minutes "30m", hours "3.5h", days "2d", or weeks
-"0.75w". Defaults to hours if unit unspecified. One day is equal to eight hours.
-One week is equal to five days. In future, adherence to business days / hours
-may be configurable.
+Estimates can be provided in minutes "30m" or hours "3.5h". Estimates cannot be
+provided in days or weeks, because est's auto time tracking uses customizable
+working hours which makes estimation in days or weeks confusing and error-prone.
+Split large tasks such that estimates are below 16 hours. See 'est schedule'.
 
 The estimate can be provided as second argument or as -e.
 
 Examples:
   # Estimate the task with ID prefix "3c" at 7 hours.
-  est e 3c 7
+  est e 3c 7h
 
-  # Estimate the task with ID prefix "8d6d9" at 1.5 days.
-  est e 8d6d9 1.5d
+  # Estimate the task with ID prefix "8d6d9" at 90 minutes.
+  est e 8d6d9 90m
 
-  # Estimate the task with ID prefix "94" at 0.25 weeks.
-  est -e 0.25w 94
+  # Estimate the task with ID prefix "94" at 0.25 hours.
+  est -e 0.25h 94
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		if flagEstimate != "" && len(args) < 2 {

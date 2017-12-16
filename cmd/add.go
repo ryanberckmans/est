@@ -22,10 +22,10 @@ The new task name is the concatenation of all non-flag args, no quotes required.
 An estimate can be provided with -e, otherwise the new task will be unestimated.
 If an estimate was provided, the new task can be immediately started with -s.
 
-Estimates can be provided in minutes "30m", hours "3.5h", days "2d", or weeks
-"0.75w". Defaults to hours if unit unspecified. One day is equal to eight hours.
-One week is equal to five days. In future, adherence to business days / hours
-may be configurable.
+Estimates can be provided in minutes "30m" or hours "3.5h". Estimates cannot be
+provided in days or weeks, because est's auto time tracking uses customizable
+working hours which makes estimation in days or weeks confusing and error-prone.
+Split large tasks such that estimates are below 16 hours. See 'est schedule'.
 
 The start time can be in the past with -a, using the same duration syntax as -e.
 
@@ -39,8 +39,8 @@ Examples:
   # Add an estimated task; the estimate unit defaults to hours.
   est a --estimate 2 change color to red
 
-  # Add an estimated task; estimate is half a day; flag can go after task name.
-  est a fix the bug -e 0.5d
+  # Add an estimated task; estimate is four hours; flag can go after task name.
+  est a fix the bug -e 4h
 
   # Add and start an estimated task.
   est a -e 30m -s add another button
