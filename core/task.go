@@ -190,19 +190,20 @@ func (t *Task) DeletedAt() time.Time {
 	return t.task.DeletedAt
 }
 
-func (t *Task) status() taskStatus {
+// Return this task's status and date of that status.
+func (t *Task) status() (taskStatus, time.Time) {
 	switch {
 	// The order of these cases is significant. Deleted is orthogonal to Done | Started; both are orthogonal to Estimated | Unestimated.
 	case t.task.IsDeleted:
-		return taskStatusDeleted
+		return taskStatusDeleted, t.DeletedAt()
 	case t.IsDone():
-		return taskStatusDone
+		return taskStatusDone, t.DoneAt()
 	case t.IsStarted():
-		return taskStatusStarted
+		return taskStatusStarted, t.StartedAt()
 	case t.IsEstimated():
-		return taskStatusEstimated
+		return taskStatusEstimated, t.EstimatedAt()
 	}
-	return taskStatusUnestimated
+	return taskStatusUnestimated, t.CreatedAt()
 }
 
 // task doesn't actually have a field taskStatus, because taskStatus is a projection
@@ -221,12 +222,12 @@ const (
 // suitable to be included in a one-task-per-line output to user.
 func RenderTaskOneLineSummary(t *Task, includeHeaders bool) string {
 	var status string
-	switch t.status() {
+	statusCode, statusTime := t.status()
+	_, month, day := statusTime.Date()
+	switch statusCode {
 	case taskStatusDeleted:
-		_, month, day := t.DeletedAt().Date()
 		status = fmt.Sprintf("%sdeleted%s on %d/%d", ansiBold+ansiBoldRed, ansiReset, month, day)
 	case taskStatusDone:
-		_, month, day := t.DoneAt().Date()
 		if t.Actual() < time.Minute {
 			status = fmt.Sprintf("done in %.1fs on %d/%d", t.Actual().Seconds(), month, day)
 		} else if t.Actual() < time.Hour {
@@ -235,13 +236,10 @@ func RenderTaskOneLineSummary(t *Task, includeHeaders bool) string {
 			status = fmt.Sprintf("done in %.1fh on %d/%d", t.Actual().Hours(), month, day)
 		}
 	case taskStatusStarted:
-		_, month, day := t.StartedAt().Date()
 		status = fmt.Sprintf("%sstarted%s on %d/%d", ansiBold+ansiBoldYellow, ansiReset, month, day)
 	case taskStatusEstimated:
-		_, month, day := t.EstimatedAt().Date()
 		status = fmt.Sprintf("estimated on %d/%d", month, day)
 	default:
-		_, month, day := t.CreatedAt().Date()
 		status = fmt.Sprintf("%sunestimated%s on %d/%d", ansiBold+ansiDangerOrange, ansiReset, month, day)
 	}
 	var headers string
@@ -530,7 +528,12 @@ func (ts sortByStatusDescending) Len() int {
 	return len(ts)
 }
 func (ts sortByStatusDescending) Less(i, j int) bool {
-	return ts[i].status() > ts[j].status()
+	iStatus, iStatusDate := ts[i].status()
+	jStatus, jStatusDate := ts[j].status()
+	if iStatus != jStatus {
+		return iStatus > jStatus
+	}
+	return iStatusDate.After(jStatusDate)
 }
 func (ts sortByStatusDescending) Swap(i, j int) {
 	tmp := ts[j]
