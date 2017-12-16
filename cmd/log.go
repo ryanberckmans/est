@@ -18,10 +18,14 @@ var logCmd = &cobra.Command{
 est log <task ID prefix> <duration>
 
 Most users should not use 'est log' and instead rely on auto time tracking. See
-'est help done' for an explanation of auto time tracking.
+'est help done' for an explanation of auto time tracking and how it interacts
+with 'est log'.
 
-'est log' is provided as an escape hatch; in particular, auto time tracking
-poorly handles work done outside of business hours.
+'est log' is provided as an escape hatch. In particular, auto time tracking
+poorly handles work done entirely outside of business hours.
+
+As a rule of thumb, use 'est log' if more than half of actual task hours are
+done outside of working hours. Otherwise rely on auto time tracking.
 
 To specify the task on which to log time, use a prefix of the task ID shown in
 'est ls'.
