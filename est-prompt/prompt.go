@@ -8,6 +8,8 @@ import (
 )
 
 const ansiReset = "\033[0m"
+const ansiBold = "\033[1m"
+const ansiBoldYellow = "\033[93m"
 const ansiBoldMagenta = "\033[95m"
 const ansiDangerOrange = "\033[38;5;202m" // color 202 of 256
 
@@ -43,7 +45,7 @@ func renderPrompt(ts []*core.Task) string {
 }
 
 func promptColor(s string) string {
-	return bashOpen + ansiReset + ansiBoldMagenta + bashClose + s + bashOpen + ansiReset + bashClose
+	return bashOpen + ansiReset + ansiBold + ansiBoldYellow + bashClose + s + bashOpen + ansiReset + bashClose
 }
 
 func promptOneTask(t *core.Task) string {
