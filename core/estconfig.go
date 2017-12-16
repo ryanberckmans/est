@@ -9,8 +9,8 @@ import (
 
 const estConfigMode os.FileMode = 0600
 
-const estConfigDefaultContents string = `
-# Your estfile stores your tasks and estimates. Some users may want to change this to a location with automatic backup, such as Dropbox or Google Drive.
+const estConfigDefaultContents string = `# Your estfile.toml stores your tasks and estimates. Some users may want to change this to a location with automatic backup, such as Dropbox or Google Drive.
+# At this time the only supported env var is "$HOME", other env vars will not work.
 estfile = "$HOME/.estfile.toml"
 `
 

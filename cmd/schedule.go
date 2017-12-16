@@ -11,8 +11,8 @@ import (
 
 var scheduleCmd = &cobra.Command{
 	Use:   "schedule",
-	Short: "Display a probabilistic schedule for unstarted, estimated tasks",
-	Long: `Display a probabilistic schedule for unstarted, estimated tasks.
+	Short: "Display a predicted, probabilistic schedule for unstarted, estimated tasks",
+	Long: `Display a predicted, probabilistic schedule for unstarted, estimated tasks.
 
 The schedule predicts the date on which all tasks will be delivered.
 

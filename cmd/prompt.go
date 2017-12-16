@@ -6,7 +6,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const promptHelpMsg string = `est ships with a separate executable, est-prompt, which adds live est task information to your prompt.
+const promptHelpMsg string = `est ships with a separate executable, est-prompt, which adds live est task
+information to your prompt.
 
 est-prompt is designed to be opinionated and minimally distracting.
 
