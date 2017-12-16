@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
-	"time"
 
 	"github.com/BurntSushi/toml"
 )
@@ -126,18 +125,18 @@ func encodeEstFile(ef estFile) string {
 	return buf.String()
 }
 
+// TODO fakeEstfile currently doubles as the empty estfile; these could be split.
 func fakeEstfile() estFile {
 	var ts tasks
-	n := func(f func(*Task, int)) {
-		i := len(ts)
-		ts = append(ts, NewTask())
-		f(ts[i], i)
-	}
-	n(func(t *Task, i int) {
-		_ = t.SetName("organize imports in math.go")
-		_ = t.SetEstimated(time.Minute * 390)
-	})
-	// TODO convert old fake tasks into new data structure
+	// n := func(f func(*Task, int)) {
+	// 	i := len(ts)
+	// 	ts = append(ts, NewTask())
+	// 	f(ts[i], i)
+	// }
+	// n(func(t *Task, i int) {
+	// 	_ = t.SetName("organize imports in math.go")
+	// 	_ = t.SetEstimated(time.Minute * 390)
+	// })
 	// t0.Hours = []float64{6.0, 9.2}
 	// t0.ShortName = "math.go imports"
 	// if !t0.IsDone() {
