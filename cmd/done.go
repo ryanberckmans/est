@@ -9,7 +9,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// TODO add --ago <time> to allow task to be marked as done as of <time> ago. The idea here is est's automatic time-tracking shouldn't penalize you for being AFK and unable to mark a task as completed. <time> should probably be wall-clock time, if user starts at 3hr task at 9am on a Friday, finishes it at 1pm, and then doesn't mark it done until Monday at 1pm, then user would think of `--ago 3d`, and not think of business hours/days. Wall clock time is also more compatible with future version of est which may support non-business-day mode.
 var doneCmd = &cobra.Command{
 	Use:     "done",
 	Aliases: []string{"d"},
@@ -21,13 +20,23 @@ est done <task ID prefix>
 Mark a started task as done. To specify the task to start, use a prefix of the
 task ID shown in 'est ls'.
 
-The actual time spent on the task is calculated automatically by est.
-TODO concurrent tasks share passage of time
-TODO explain time calculation
-TODO currently tasks can be restarted after marked done; finalize / explain
+A task which is done can be restarted.
 
-The done time can be in the past with -a, using the same duration syntax as the
-estimate command.
+The actual time spent on the task is calculated automatically by est. For tasks
+performed mostly during working hours, there is no need to log time on task,
+est will do this automatically. For tasks performed mostly outside of working
+hours, see 'est log'.
+
+est's auto time tracking uses a customizable definition of working hours. For
+now, working hours are hardcoded in cmd/root.go.
+
+When multiple tasks are started, est will share the passage of time equally
+among all started tasks. For example, if two tasks are started and time passes
+from 9am to 10am during working hours, then each task will receive half the
+elapsed duration, which is thirty minutes.
+
+The time at which a task is marked done can be in the past with -a, using the
+same duration syntax as the estimate command.
 
 The (estimated hours, actual hours) for done tasks are used as data points to
 predict delivery schedule of future tasks in 'est schedule'.

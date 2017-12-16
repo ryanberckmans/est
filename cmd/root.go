@@ -20,6 +20,10 @@ var globalWorkTimes worktimes.WorkTimes
 func init() {
 	// TODO construct WorkTimes from estconfig
 	var err error
+	// When customizing globalWorkTimes, tend to understate working hours, so that
+	// time worked outside of working hours is a bonus and, if not worked, not a
+	// penalty. For example, one might start work earlier, end later, or work on
+	// weekends, however the working hours below are only 9:30-noon + 12:30-5:30pm.
 	globalWorkTimes, err = worktimes.New(map[time.Weekday]bool{
 		time.Monday:    true,
 		time.Tuesday:   true,
