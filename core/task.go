@@ -399,7 +399,7 @@ func autoAddActual(wt worktimes.WorkTimes, ts tasks, end time.Time) {
 		// We'll now tick ts2 in shared passage of time. ts2's start time is
 		// the same and lowest of ts. nextEnd is the next lowest time after ts2.
 
-		autoActual := businessHoursBetweenTimes(wt, lowest, nextEnd) // auto time tracking includes business hours only, otherwise weekends, sleep, etc., would count as time on task.
+		autoActual := wt.DurationBetween(lowest, nextEnd) // auto time tracking includes workin hours only, otherwise weekends, sleep, etc., would count as time on task.
 		autoActualShared := autoActual / time.Duration(len(ts2))
 		// fmt.Printf("count=%d lowest=%v nextEnd=%v autoActual=%v autoActualShared=%v end=%v\n", len(ts2), lowest, nextEnd, autoActual, autoActualShared, end)
 		for i := range ts2 {
