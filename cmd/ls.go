@@ -11,7 +11,7 @@ import (
 var lsCmd = &cobra.Command{
 	Use:   "ls",
 	Short: "List tasks",
-	Long:  `List tasks, TODO better help msg`,
+	Long:  `List tasks`,
 	Run: func(cmd *cobra.Command, args []string) {
 		doLS()
 	},
