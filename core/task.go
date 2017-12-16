@@ -11,6 +11,17 @@ import (
 	"github.com/ryanberckmans/est/core/worktimes"
 )
 
+const ansiReset = "\033[0m"
+const ansiBold = "\033[1m"
+const ansiBoldRed = "\033[92m"
+const ansiBoldGreen = "\033[92m"
+const ansiBoldYellow = "\033[93m"
+const ansiBoldBlue = "\033[94m"
+const ansiBoldMagenta = "\033[95m"
+const ansiBoldCyan = "\033[96m"
+const ansiBoldWhite = "\033[97m"
+const ansiDangerOrange = "\033[38;5;202m" // color 202 of 256
+
 type tasks []*Task
 
 // TODO make use of event
@@ -213,7 +224,7 @@ func RenderTaskOneLineSummary(t *Task, includeHeaders bool) string {
 	switch t.status() {
 	case taskStatusDeleted:
 		_, month, day := t.DeletedAt().Date()
-		status = fmt.Sprintf("deleted on %d/%d", month, day)
+		status = fmt.Sprintf("%sdeleted%s on %d/%d", ansiBold+ansiBoldRed, ansiReset, month, day)
 	case taskStatusDone:
 		_, month, day := t.DoneAt().Date()
 		if t.Actual() < time.Minute {
@@ -225,24 +236,24 @@ func RenderTaskOneLineSummary(t *Task, includeHeaders bool) string {
 		}
 	case taskStatusStarted:
 		_, month, day := t.StartedAt().Date()
-		status = fmt.Sprintf("started on %d/%d", month, day)
+		status = fmt.Sprintf("%sstarted%s on %d/%d", ansiBold+ansiBoldYellow, ansiReset, month, day)
 	case taskStatusEstimated:
 		_, month, day := t.EstimatedAt().Date()
 		status = fmt.Sprintf("estimated on %d/%d", month, day)
 	default:
 		_, month, day := t.CreatedAt().Date()
-		status = fmt.Sprintf("unestimated on %d/%d", month, day) // TODO danger orange in colors package :)
+		status = fmt.Sprintf("%sunestimated%s on %d/%d", ansiBold+ansiDangerOrange, ansiReset, month, day)
 	}
 	var headers string
 	if includeHeaders {
-		headers = "ID\tEstimate\tStatus\t\t\t\tName\n"
+		headers = "STATUS\t\t\t\tESTIMATE\tID\tNAME\n"
 	}
-	return fmt.Sprintf("%s%s\t%.1fh\t\t%s\t\t%s",
+	return fmt.Sprintf("%s%s\t\t%.1fh\t\t%s\t%s",
 		headers,
-		t.task.ID.String()[0:5], // TODO dynamic length of ID prefix based on uniqueness of all task IDs. (Inject IDPrefixLen)
-		t.Estimated().Hours(),
 		status,
-		t.Name(), // t.Name() has arbitrary length and so is last
+		t.Estimated().Hours(),
+		t.task.ID.String()[0:5], // TODO dynamic length of ID prefix based on uniqueness of all task IDs. (Inject IDPrefixLen)
+		t.Name(),                // name has arbitrary length and so is last
 	)
 }
 
