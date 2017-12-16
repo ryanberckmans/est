@@ -34,12 +34,26 @@ func DeliverySchedule(wt worktimes.WorkTimes, now time.Time, historicalEstimateA
 
 	var timeArray [100]time.Time
 
+	// wt.TimeAfter() is slow and this concurrency reduces runtime from 10s to 4s on my macbook.
+	type pair struct {
+		t time.Time
+		i int
+	}
+
+	timeAfterChan := make(chan pair, len(pct))
+
 	for i := range pct {
 		d, err := time.ParseDuration(fmt.Sprintf("%fh", pct[i]))
 		if err != nil {
 			panic(err)
 		}
-		timeArray[i] = wt.TimeAfter(now, d)
+		go func(t2 time.Time, d2 time.Duration, j int) {
+			timeAfterChan <- pair{wt.TimeAfter(t2, d2), j}
+		}(now, d, i)
+	}
+	for _ = range pct {
+		p := <-timeAfterChan
+		timeArray[p.i] = p.t
 	}
 	return timeArray
 }
