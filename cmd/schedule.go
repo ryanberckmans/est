@@ -44,13 +44,13 @@ var scheduleDisplayDatesOnly bool
 func runSchedule() {
 	core.WithEstConfigAndFile(func(ec *core.EstConfig, ef *core.EstFile) {
 		ts := ef.Tasks.IsNotDeleted().IsEstimated().IsNotStarted().IsNotDone()
-		dates := core.DeliverySchedule(ef.HistoricalEstimateAccuracyRatios(), ts)
+		now := time.Now()
+		dates := core.DeliverySchedule(globalWorkTimes, now, ef.HistoricalEstimateAccuracyRatios(), ts)
 		ss := core.RenderDeliverySchedule(dates)
 		if scheduleDisplayDatesOnly {
 			s := strings.Join(ss[:], "\n") + "\n"
 			os.Stdout.WriteString(s)
 		} else {
-			now := time.Now()
 			// Convert dates into wall clock days in future, because termui supports only float data
 			dd := make([]float64, len(dates))
 			for i := range dates {

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math/rand"
 	"time"
+
+	"github.com/ryanberckmans/est/core/worktimes"
 )
 
 // RenderDeliverySchedule returns a list of string
@@ -20,21 +22,24 @@ func RenderDeliverySchedule(dates [100]time.Time) [21]string {
 
 // DeliverySchedule returns a predicted delivery schedule, as a time percentile,
 // using the passed historical data as a basis for future work on the passed tasks.
-func DeliverySchedule(historicalEstimateAccuracyRatios []float64, ts tasks) [100]time.Time {
+func DeliverySchedule(wt worktimes.WorkTimes, now time.Time, historicalEstimateAccuracyRatios []float64, ts tasks) [100]time.Time {
 	var toSamples []float64
 	for i := range ts {
 		toSamples = append(toSamples, ts[i].Estimated().Hours())
 	}
 
-	samples := sampleDistribution(100, rand.New(rand.NewSource(time.Now().UnixNano())), historicalEstimateAccuracyRatios, toSamples)
+	samples := sampleDistribution(100, rand.New(rand.NewSource(now.UnixNano())), historicalEstimateAccuracyRatios, toSamples)
 
 	pct := toPercentile(samples) // after writing toPercentile(), realized that the statistical significance of the distribution may change if the iterations in sampleDistribution() differ from 100. I.e. if you do 10k iterations, then pct[99] is going to represent a 1 in 10,000 case, which isn't what the user expects. So toPercentile() isn't too useful because the percentile result model only makes sense if 1% actually means 1 in 100. Right?
 
-	timeSlice := futureBusinessHoursToTime(pct[:])
 	var timeArray [100]time.Time
-	numCopied := copy(timeArray[:], timeSlice)
-	if numCopied != 100 {
-		panic(fmt.Sprintf("expected to copy 100 elements when building time percentile, copied %d", numCopied))
+
+	for i := range pct {
+		d, err := time.ParseDuration(fmt.Sprintf("%fh", pct[i]))
+		if err != nil {
+			panic(err)
+		}
+		timeArray[i] = wt.TimeAfter(now, d)
 	}
 	return timeArray
 }
