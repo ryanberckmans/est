@@ -21,10 +21,10 @@ var lsCmd = &cobra.Command{
 
 func doLS() {
 	core.WithEstConfigAndFile(func(ec *core.EstConfig, ef *core.EstFile) {
-		ts := ef.Tasks.SortByStatusDescending()
+		ts := ef.Tasks.SortByStatusDescending().IsNotDeleted()
 		rs := make([]string, len(ts)+1) // +1 causes the last element to be empty string, which causes the Join to add an extra newline
 		for i := range ts {
-			rs[i] = core.RenderTaskOneLineSummary(ts[i])
+			rs[i] = core.RenderTaskOneLineSummary(ts[i], i == 0)
 		}
 		os.Stdout.WriteString(strings.Join(rs, "\n"))
 	}, func() {

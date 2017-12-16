@@ -76,7 +76,7 @@ Examples:
 				os.Exit(1)
 				return
 			}
-			fmt.Println(core.RenderTaskOneLineSummary(ef.Tasks[i]))
+			fmt.Println(core.RenderTaskOneLineSummary(ef.Tasks[i], true))
 		}, func() {
 			// failed to load estconfig or estfile. Err printed elsewhere.
 			os.Exit(1)
