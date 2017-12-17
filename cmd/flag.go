@@ -36,8 +36,9 @@ func doFlagLog(t *core.Task, now time.Time) {
 		os.Exit(1)
 		return
 	}
-	t.AddActual(d, now)
-	return
+	if err := t.AddActual(d, now); err != nil {
+		panic(err)
+	}
 }
 
 func applyFlagAgo(t time.Time) time.Time {

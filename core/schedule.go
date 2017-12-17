@@ -51,7 +51,7 @@ func DeliverySchedule(wt worktimes.WorkTimes, now time.Time, historicalEstimateA
 			timeAfterChan <- pair{wt.TimeAfter(t2, d2), j}
 		}(now, d, i)
 	}
-	for _ = range pct {
+	for range pct {
 		p := <-timeAfterChan
 		timeArray[p.i] = p.t
 	}

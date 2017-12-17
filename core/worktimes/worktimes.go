@@ -35,11 +35,11 @@ type workTimes struct {
 
 // returns working start/end times on the day of the passed time, nil if passed time isn't a workday. Guaranteed that len([]time.Time) % 2 == 0, and that these times have monotonically increasing hour:minute in local time on day of passed time.
 // TODO real doc and unit test
-func (w *workTimes) GetWorkTimesOnDay(t time.Time) []time.Time {
-	if !w.calendar.IsWorkday(t) {
+func (wt *workTimes) GetWorkTimesOnDay(t time.Time) []time.Time {
+	if !wt.calendar.IsWorkday(t) {
 		return nil
 	}
-	return getTimesOnDay(w.workHours, t)
+	return getTimesOnDay(wt.workHours, t)
 }
 
 // TODO doc, finish unit tests.

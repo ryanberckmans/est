@@ -11,15 +11,16 @@ import (
 	"github.com/ryanberckmans/est/core/worktimes"
 )
 
+// const ansiBoldGreen = "\033[92m"
+// const ansiBoldBlue = "\033[94m"
+// const ansiBoldMagenta = "\033[95m"
+// const ansiBoldCyan = "\033[96m"
+// const ansiBoldWhite = "\033[97m"
+
 const ansiReset = "\033[0m"
 const ansiBold = "\033[1m"
 const ansiBoldRed = "\033[92m"
-const ansiBoldGreen = "\033[92m"
 const ansiBoldYellow = "\033[93m"
-const ansiBoldBlue = "\033[94m"
-const ansiBoldMagenta = "\033[95m"
-const ansiBoldCyan = "\033[96m"
-const ansiBoldWhite = "\033[97m"
 const ansiDangerOrange = "\033[38;5;202m" // color 202 of 256
 
 type tasks []*Task

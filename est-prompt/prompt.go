@@ -7,10 +7,10 @@ import (
 	"github.com/ryanberckmans/est/core"
 )
 
+// const ansiBoldMagenta = "\033[95m"
 const ansiReset = "\033[0m"
 const ansiBold = "\033[1m"
 const ansiBoldYellow = "\033[93m"
-const ansiBoldMagenta = "\033[95m"
 const ansiDangerOrange = "\033[38;5;202m" // color 202 of 256
 
 // For bash, escape the colors with \[ \] http://mywiki.wooledge.org/BashFAQ/053
