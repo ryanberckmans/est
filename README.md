@@ -6,7 +6,7 @@
 go get -u github.com/ryanberckmans/est && go install github.com/ryanberckmans/est/...
 ```
 
-2. Integrate `est` into your prompt. We've designed this to be minimally distracting. Let us know how did!
+2. Integrate `est` into your prompt
 ```
 est prompt
 ```

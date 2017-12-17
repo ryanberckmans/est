@@ -6,10 +6,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const promptHelpMsg string = `est ships with a separate executable, est-prompt, which adds live est task
-information to your prompt.
+const promptHelpMsg string = `est-prompt
 
-est-prompt is designed to be opinionated and minimally distracting.
+est ships with a separate executable, est-prompt, which shows a summary of
+started tasks in your prompt.
+
+est-prompt uses a fixed-width format designed to be minimally distracting. It's
+hardcoded to display in bold yellow which you can change in promptColor().
 
 Add est-prompt to your bash prompt by adding this snippet into your PS1 variable:
 
