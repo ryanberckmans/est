@@ -45,8 +45,10 @@ func runSchedule() {
 	core.WithEstConfigAndFile(func(ec *core.EstConfig, ef *core.EstFile) {
 		ts := ef.Tasks.IsNotDeleted().IsEstimated().IsNotStarted().IsNotDone()
 		now := time.Now()
+		os.Stdout.WriteString("Predicting delivery schedule for unstarted, estimated tasks...")
 		dates := core.DeliverySchedule(globalWorkTimes, now, ef.HistoricalEstimateAccuracyRatios(), ts)
 		ss := core.RenderDeliverySchedule(dates)
+		os.Stdout.WriteString("done\n")
 		if scheduleDisplayDatesOnly {
 			s := strings.Join(ss[:], "\n") + "\n"
 			os.Stdout.WriteString(s)
