@@ -23,7 +23,6 @@ func TestLooksLikeIdPrefix(t *testing.T) {
 	}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			g
 			assert.Equal(t, tc.expected, looksLikeIDPrefix(tc.input))
 		})
 	}

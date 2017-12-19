@@ -95,6 +95,10 @@ Examples:
 					return
 				}
 				doFlagLog(t, startTime)
+			} else if flagAgo != "" {
+				fmt.Println("fatal: cannot add new task: -a --ago flag requires -s --start")
+				os.Exit(1)
+				return
 			}
 			if err := ef.Write(); err != nil {
 				fmt.Printf("fatal: %v\n", err)
