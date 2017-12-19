@@ -54,14 +54,14 @@ func applyFlagAgo(t time.Time) time.Time {
 	return t.Add(-ago)
 }
 
-var durationHoursRegexp = regexp.MustCompile(`^([1-9][0-9]*(\.[0-9]*)?|0\.[0-9]+)(m|h)$`)
+var durationRegexp = regexp.MustCompile(`^([1-9][0-9]*(\.[0-9]*)?|0\.[0-9]+)(m|h)$`)
 
 // TODO unit test
 func parseDurationHours(e string, name string) (time.Duration, error) {
 	if e == "" {
 		return 0, nil
 	}
-	if !durationHoursRegexp.MatchString(e) {
+	if !durationRegexp.MatchString(e) {
 		return 0, errors.New("invalid " + name + ". For example, \"1.5h\", \"0.5h\", or \"90m\".")
 	}
 	unitMultiplier := 1.0 // default to hours

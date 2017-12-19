@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -55,6 +56,11 @@ Examples:
 			os.Exit(1)
 			return
 		}
+		if looksLikeIDPrefix(name) {
+			fmt.Println("fatal: you tried to add a task with a name that looks like an ID prefix. Did you mean another command such as 'est start'?")
+			os.Exit(1)
+			return
+		}
 		estimate, err := parseDurationHours(flagEstimate, "estimate")
 		if err != nil {
 			fmt.Println("fatal: " + err.Error())
@@ -101,6 +107,13 @@ Examples:
 			os.Exit(1)
 		})
 	},
+}
+
+var looksLikeIDPrefixRegexp = regexp.MustCompile(`^[a-f0-9]*[0-9][a-f0-9]*$`)
+
+// Return true iff the passed string looks like a human typed a UUID prefix.
+func looksLikeIDPrefix(s string) bool {
+	return looksLikeIDPrefixRegexp.MatchString(s)
 }
 
 var addCmdStartNow bool
