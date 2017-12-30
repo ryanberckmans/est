@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -25,7 +26,11 @@ automatically opened in the operating system's default viewer.
 	Run: func(cmd *cobra.Command, args []string) {
 		core.WithEstConfigAndFile(func(ec *core.EstConfig, ef *core.EstFile) {
 			// TODO include only ratios in last N days to prevent chart from becoming unreadable.
-			core.AccuracyRatioChart(ef.HistoricalEstimateAccuracyRatios(), time.Now())
+			if err := core.AccuracyRatioChart(ef.HistoricalEstimateAccuracyRatios(), time.Now()); err != nil {
+				fmt.Println("fatal: " + err.Error())
+				os.Exit(1)
+				return
+			}
 		}, func() {
 			// failed to load estconfig or estfile. Err printed elsewhere.
 			os.Exit(1)

@@ -1,6 +1,7 @@
 package core
 
 import (
+	"errors"
 	"io/ioutil"
 	"math"
 	"time"
@@ -89,6 +90,9 @@ func PredictedDeliveryDateChart(predictedDaysInFuture []float64, ts tasks, pct [
 // AccuracyRatioChart shows how accuracy the user has estimated,
 // providing a feedback loop to become a better estimator.
 func AccuracyRatioChart(ars []AccuracyRatio, now time.Time) error {
+	if len(ars) < 1 {
+		return errors.New("no historical accuracy ratios")
+	}
 	return openChartInBrowser(makeAccuracyRatioChart(ars, now), "est-how-am-i-doing-")
 }
 
@@ -99,6 +103,7 @@ func makeAccuracyRatioChart(ars []AccuracyRatio, now time.Time) *chart.Chart {
 	xs := make([]float64, len(ars))
 	ys := make([]float64, len(ars))
 	dws := make([]float64, len(ars))
+	minDaysAgo := math.MaxFloat64
 	maxDaysAgo := 0.0
 	for i := range ars {
 		xs[i] = math.Floor(now.Sub(ars[i].time).Hours() / 24.0)
@@ -106,15 +111,24 @@ func makeAccuracyRatioChart(ars []AccuracyRatio, now time.Time) *chart.Chart {
 			// disallow future dates; this is a retrospective chart and future days are unexpected.
 			xs[i] = 0
 		}
+		if xs[i] < minDaysAgo {
+			minDaysAgo = xs[i]
+		}
 		if xs[i] > maxDaysAgo {
 			maxDaysAgo = xs[i]
 		}
 		ys[i] = ars[i].ratio
-		l := math.Log2(ars[i].duration.Hours()*4) * 2
-		if l < 1 {
-			l = 1
+		h := ars[i].duration.Hours()
+		baseDiameter := 2.0
+		var w float64
+		switch {
+		case h <= 1:
+			w = baseDiameter
+		default:
+			// Area of scatter dot increases linearly with estimate size
+			w = baseDiameter + math.Sqrt(2*h)
 		}
-		dws[i] = l
+		dws[i] = w
 	}
 	dcFunc := func(xr, yr chart.Range, index int, x, y float64) drawing.Color {
 		ratio := y
@@ -173,7 +187,7 @@ func makeAccuracyRatioChart(ars []AccuracyRatio, now time.Time) *chart.Chart {
 					Show:        true,
 					StrokeColor: drawing.ColorGreen,
 				},
-				XValues: []float64{0, maxDaysAgo},
+				XValues: []float64{minDaysAgo, maxDaysAgo},
 				YValues: []float64{1.0, 1.0},
 			},
 		},
