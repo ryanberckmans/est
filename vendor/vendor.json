@@ -9,6 +9,18 @@
 			"revisionTime": "2017-06-26T11:06:00Z"
 		},
 		{
+			"checksumSHA1": "Ssktbpjqh4tN5BsyQ+/2zI1don4=",
+			"path": "github.com/blendlabs/go-exception",
+			"revision": "8d6614c6a381fe586fa618174af22043ff966730",
+			"revisionTime": "2017-10-24T19:22:40Z"
+		},
+		{
+			"checksumSHA1": "tq5yoX7/N8ARRCYzYM/qQdQA8P8=",
+			"path": "github.com/blendlabs/go-util",
+			"revision": "2da91d26dd94224b78f3a8bae48baf36f920b84a",
+			"revisionTime": "2017-12-15T05:17:40Z"
+		},
+		{
 			"checksumSHA1": "OFu4xJEIjiI8Suu+j/gabfp+y6Q=",
 			"origin": "github.com/stretchr/testify/vendor/github.com/davecgh/go-spew/spew",
 			"path": "github.com/davecgh/go-spew/spew",
@@ -26,6 +38,18 @@
 			"path": "github.com/gizak/termui",
 			"revision": "72304ddb9b4e9838426a021aad64a5a860e98324",
 			"revisionTime": "2017-05-02T14:12:00Z"
+		},
+		{
+			"checksumSHA1": "aJ/kX/eCUlrCJBZ26Hwh/RXzAIw=",
+			"path": "github.com/golang/freetype/raster",
+			"revision": "e2365dfdc4a05e4b8299a783240d4a7d5a65d4e4",
+			"revisionTime": "2017-06-09T00:35:04Z"
+		},
+		{
+			"checksumSHA1": "I3u9Uh9thka1gsgch6QEiPkaAr0=",
+			"path": "github.com/golang/freetype/truetype",
+			"revision": "e2365dfdc4a05e4b8299a783240d4a7d5a65d4e4",
+			"revisionTime": "2017-06-09T00:35:04Z"
 		},
 		{
 			"checksumSHA1": "uFNLkTxk8BkHTk0Jcub2lj2BX4M=",
@@ -136,6 +160,12 @@
 			"revisionTime": "2017-10-24T21:10:38Z"
 		},
 		{
+			"checksumSHA1": "VQ8m0ncYJSbzslI7nVjiAdGEOeQ=",
+			"path": "github.com/pkg/browser",
+			"revision": "c90ca0c84f15f81c982e32665bffd8d7aac8f097",
+			"revisionTime": "2017-05-05T12:59:00Z"
+		},
+		{
 			"checksumSHA1": "zKKp5SZ3d3ycKe4EKMNT0BqAWBw=",
 			"origin": "github.com/stretchr/testify/vendor/github.com/pmezard/go-difflib/difflib",
 			"path": "github.com/pmezard/go-difflib/difflib",
@@ -195,6 +225,66 @@
 			"path": "github.com/stretchr/testify/assert",
 			"revision": "2aa2c176b9dab406a6970f6a55f513e8a8c8b18f",
 			"revisionTime": "2017-08-14T20:04:35Z"
+		},
+		{
+			"checksumSHA1": "OeW3GfZj5vEGV2BMmk1GIvb/S/M=",
+			"path": "github.com/wcharczuk/go-chart",
+			"revision": "f72f7fd57b99907bc56d34b7071656c83dbf0a16",
+			"revisionTime": "2017-10-12T20:29:55Z"
+		},
+		{
+			"checksumSHA1": "/Amn4XivPItINSALiV/uQF8ogNw=",
+			"path": "github.com/wcharczuk/go-chart/drawing",
+			"revision": "f72f7fd57b99907bc56d34b7071656c83dbf0a16",
+			"revisionTime": "2017-10-12T20:29:55Z"
+		},
+		{
+			"checksumSHA1": "kPqs986jHunAn+grWysGPIABnQc=",
+			"path": "github.com/wcharczuk/go-chart/matrix",
+			"revision": "f72f7fd57b99907bc56d34b7071656c83dbf0a16",
+			"revisionTime": "2017-10-12T20:29:55Z"
+		},
+		{
+			"checksumSHA1": "XJZ8xjTjszuaBenrG5kB+jO1w/o=",
+			"path": "github.com/wcharczuk/go-chart/roboto",
+			"revision": "f72f7fd57b99907bc56d34b7071656c83dbf0a16",
+			"revisionTime": "2017-10-12T20:29:55Z"
+		},
+		{
+			"checksumSHA1": "K2BgW05KUX00pQepbV36ulhHNhM=",
+			"path": "github.com/wcharczuk/go-chart/seq",
+			"revision": "f72f7fd57b99907bc56d34b7071656c83dbf0a16",
+			"revisionTime": "2017-10-12T20:29:55Z"
+		},
+		{
+			"checksumSHA1": "zc0z91e8q0LCIIztdSs0Bp4z1SU=",
+			"path": "github.com/wcharczuk/go-chart/util",
+			"revision": "f72f7fd57b99907bc56d34b7071656c83dbf0a16",
+			"revisionTime": "2017-10-12T20:29:55Z"
+		},
+		{
+			"checksumSHA1": "cH+9uIg24pjXHRdUPW0WjMpkau4=",
+			"path": "golang.org/x/image/draw",
+			"revision": "12117c17ca67ffa1ce22e9409f3b0b0a93ac08c7",
+			"revisionTime": "2017-12-12T19:22:48Z"
+		},
+		{
+			"checksumSHA1": "+U1IB5N4LDS74y4fXjARb4/S4IE=",
+			"path": "golang.org/x/image/font",
+			"revision": "12117c17ca67ffa1ce22e9409f3b0b0a93ac08c7",
+			"revisionTime": "2017-12-12T19:22:48Z"
+		},
+		{
+			"checksumSHA1": "o7VkCGBiKM5HXzVzrIci1YDlpvc=",
+			"path": "golang.org/x/image/math/f64",
+			"revision": "12117c17ca67ffa1ce22e9409f3b0b0a93ac08c7",
+			"revisionTime": "2017-12-12T19:22:48Z"
+		},
+		{
+			"checksumSHA1": "euzvwlMLxyD0hwc+raoVsDLv6j4=",
+			"path": "golang.org/x/image/math/fixed",
+			"revision": "12117c17ca67ffa1ce22e9409f3b0b0a93ac08c7",
+			"revisionTime": "2017-12-12T19:22:48Z"
 		},
 		{
 			"checksumSHA1": "iKgeC4jGetV1a+cyKz9EI8Ldlyo=",
