@@ -156,7 +156,15 @@ func (t *Task) AddActual(d time.Duration, now time.Time) error {
 
 // EstimateAccuracyRatio returns a ratio of estimate / actual hours for a done task.
 // I.e. 1.0 is perfect estimate, 2.0 means task was twice as fast, 0.5 task twice as long.
-func (t *Task) EstimateAccuracyRatio() float64 {
+func (t *Task) EstimateAccuracyRatio() AccuracyRatio {
+	return AccuracyRatio{
+		time:     t.DoneAt(),
+		duration: t.Estimated(),
+		ratio:    t.estimateAccuracyRatio(),
+	}
+}
+
+func (t *Task) estimateAccuracyRatio() float64 {
 	if t.Actual() == 0 {
 		// Downstream expects non-zero ratios: panic so that over time all
 		// clients of EstimateAccuracyRatio() will ensure non-zero Actual.

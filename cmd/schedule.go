@@ -46,7 +46,9 @@ func runSchedule() {
 		ts := ef.Tasks.IsNotDeleted().IsEstimated().IsNotStarted().IsNotDone()
 		now := time.Now()
 		os.Stdout.WriteString("Predicting delivery schedule for unstarted, estimated tasks...")
-		dates := core.DeliverySchedule(globalWorkTimes, now, ef.HistoricalEstimateAccuracyRatios(), ts)
+		rs := core.PadFakeHistoricalEstimateAccuracyRatios(
+			ef.HistoricalEstimateAccuracyRatios().Ratios(), ef.FakeHistoricalEstimateAccuracyRatios)
+		dates := core.DeliverySchedule(globalWorkTimes, now, rs, ts)
 		ss := core.RenderDeliverySchedule(dates)
 		os.Stdout.WriteString("done\n")
 		if scheduleDisplayDatesOnly {

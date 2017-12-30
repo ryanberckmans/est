@@ -35,10 +35,24 @@ func (ef EstFile) Write() error {
 	return ioutil.WriteFile(ef.fileName, []byte(encodeEstFile(toUnexportedEstfile(ef))), estFileMode)
 }
 
+// PadFakeHistoricalEstimateAccuracyRatios returns a copy of passed historical
+// estimate accuray ratios. If there's fewer than 20 passed ratios, they
+// are padded with passed fake ratios. Fake ratios make 'est schedule'
+// more useful for new estimators by providing a fake-but-conservative
+// estimation history to supplement a growing track record of real estimates.
+func PadFakeHistoricalEstimateAccuracyRatios(rs, fakeRs []float64) []float64 {
+	rs2 := make([]float64, len(rs))
+	copy(rs2, rs)
+	for i := 0; len(rs2) < 20 && i < len(fakeRs); i++ {
+		rs2 = append(rs2, fakeRs[i])
+	}
+	return rs2
+}
+
 // HistoricalEstimateAccuracyRatios returns the accuracy ratios for historical tasks
 // in this EstFile. Our definition of historical are tasks which are done and not
 // deleted. This returned []float64 is the "evidence" in "evidence-based scheduling".
-func (ef EstFile) HistoricalEstimateAccuracyRatios() []float64 {
+func (ef EstFile) HistoricalEstimateAccuracyRatios() AccuracyRatios {
 	/*
 		TODO there is an argument to weight outcomes by magnitude of task estimate: larger estimates are often more important to a business and harder to get right. If an estimator's history was 90% accurate, but tasks which were estimated accurately are the smallest 90%, then it seems this estimator's history is less accurate than, say, someone who gets large estimates mostly accurate.
 
@@ -56,14 +70,9 @@ func (ef EstFile) HistoricalEstimateAccuracyRatios() []float64 {
 		Another argument is to match historical accuracy ratios of a certain size with future task estimates of a certain size. If an estimator is good or bad at estimating small tasks, let that reflect in small task predictions, and same for large. To impl this, we might use historicalEstimateAccuracyRatios :: [(EstimatedHours, Ratio)], so that downstream is able to weigh ratios with knowledge of the size of their estimates.
 	*/
 	ts := ef.Tasks.IsNotDeleted().IsDone().IsNonZeroActual()
-	ars := make([]float64, len(ts))
+	ars := make(AccuracyRatios, len(ts))
 	for i := range ts {
 		ars[i] = ts[i].EstimateAccuracyRatio()
-	}
-
-	// If real evidence is scarce, pad with fake ratios, which are expected to be fairly random, displaying a conservative lack of confidence in the estimating ability of our estimator.
-	for i := 0; len(ars) < 20 && i < len(ef.FakeHistoricalEstimateAccuracyRatios); i++ {
-		ars = append(ars, ef.FakeHistoricalEstimateAccuracyRatios[i])
 	}
 	return ars
 }
