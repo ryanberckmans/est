@@ -182,12 +182,12 @@ func makeAccuracyRatioChart(ars []AccuracyRatio, now time.Time) *chart.Chart {
 				YValues: ys,
 			},
 			chart.ContinuousSeries{
-				Name: "Larger dots are larger estimates. The green line represents perfect estimates (i.e. accuracy ratio == 1.0)",
+				Name: "Larger dots are larger estimates. The green line represents perfect estimates. Above (below) green line is faster (slower) than expected.",
 				Style: chart.Style{
 					Show:        true,
 					StrokeColor: drawing.ColorGreen,
 				},
-				XValues: []float64{minDaysAgo, maxDaysAgo},
+				XValues: []float64{minDaysAgo, maxDaysAgo + 1}, // adding +1 will cause the data points on the y axis (which we know exist) to be rendered slightly to left of axis, improving readability. This is because y axis is rendered on right side of chart.
 				YValues: []float64{1.0, 1.0},
 			},
 		},

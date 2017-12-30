@@ -31,6 +31,26 @@ func (ars AccuracyRatios) Ratios() []float64 {
 	return rs
 }
 
+// After returns subset of accuracy ratios which are after the passed time.
+func (ars AccuracyRatios) After(t time.Time) AccuracyRatios {
+	return filterAccuracyRatios(ars, func(ar *AccuracyRatio) bool {
+		return ar.time.After(t)
+	})
+}
+
+func filterAccuracyRatios(ars AccuracyRatios, fn func(t *AccuracyRatio) bool) AccuracyRatios {
+	if ars == nil {
+		return nil
+	}
+	var res AccuracyRatios
+	for i := range ars {
+		if fn(&ars[i]) {
+			res = append(res, ars[i])
+		}
+	}
+	return res
+}
+
 type sortByTimeAscending AccuracyRatios
 
 func (ars sortByTimeAscending) Len() int {

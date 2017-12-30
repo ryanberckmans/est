@@ -22,11 +22,14 @@ by showing a visualization of the accuracy of your historical estimates.
 
 The visualization is a dynamically generated PNG image in a temporary file,
 automatically opened in the operating system's default viewer.
+
+Shows last 90 days of history.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		core.WithEstConfigAndFile(func(ec *core.EstConfig, ef *core.EstFile) {
-			// TODO include only ratios in last N days to prevent chart from becoming unreadable.
-			if err := core.AccuracyRatioChart(ef.HistoricalEstimateAccuracyRatios(), time.Now()); err != nil {
+			now := time.Now()
+			ars := ef.HistoricalEstimateAccuracyRatios().After(now.Add(-time.Hour * 24 * 90)) // show only 90 days of history to ensure chart is readable and history eventually drops off (hopefully estimator improves)
+			if err := core.AccuracyRatioChart(ars, now); err != nil {
 				fmt.Println("fatal: " + err.Error())
 				os.Exit(1)
 				return
