@@ -386,8 +386,8 @@ func (ts tasks) Pause(wt worktimes.WorkTimes, i int, now time.Time) error {
 // Mark the ith task of tasks as done. See note on Start().
 func (ts tasks) Done(wt worktimes.WorkTimes, i int, now time.Time) error {
 	t := ts[i]
-	if !t.IsStarted() {
-		return errors.New("cannot mark done a task which isn't started")
+	if !t.IsStarted() && !t.IsPaused() {
+		return errors.New("cannot mark done a task which isn't started or paused")
 	}
 	if t.IsDeleted() {
 		// We don't allow starting deleted tasks or deleting a started task, and so never expect a started task to be deleted.

@@ -31,8 +31,8 @@ func doFlagLog(t *core.Task, now time.Time) {
 		os.Exit(1)
 		return
 	}
-	if !t.IsStarted() {
-		fmt.Print("fatal: cannot log time worked on unstarted task\n")
+	if !t.IsStarted() && !t.IsPaused() {
+		fmt.Print("fatal: cannot log time on a task which isn't started or paused\n")
 		os.Exit(1)
 		return
 	}
