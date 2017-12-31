@@ -17,7 +17,7 @@ if [ ! -z $(which est) ]; then eval "$(est bash --code)"; fi
 // bashCompletionCmd represents the bash-completion command
 var bashCompletionCmd = &cobra.Command{
 	Use:   "bash",
-	Short: "Enable bash completion for est",
+	Short: "Show how to enable bash completion for est",
 	Long:  bashCompletionHelpMsg,
 	Run: func(cmd *cobra.Command, args []string) {
 		if outputBashCompletionCode {

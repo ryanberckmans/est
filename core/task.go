@@ -13,7 +13,6 @@ import (
 
 // const ansiBoldGreen = "\033[92m"
 // const ansiBoldBlue = "\033[94m"
-// const ansiBoldMagenta = "\033[95m"
 // const ansiBoldCyan = "\033[96m"
 // const ansiBoldWhite = "\033[97m"
 
@@ -21,6 +20,7 @@ const ansiReset = "\033[0m"
 const ansiBold = "\033[1m"
 const ansiBoldRed = "\033[92m"
 const ansiBoldYellow = "\033[93m"
+const ansiBoldMagenta = "\033[95m"
 const ansiDangerOrange = "\033[38;5;202m" // color 202 of 256
 
 type tasks []*Task
@@ -83,7 +83,12 @@ func (t *Task) IsNeverStarted() bool {
 
 // IsStarted returns true iff this task is currently started.
 func (t *Task) IsStarted() bool {
-	return !t.IsNeverStarted() && !t.task.IsDone
+	return !t.IsNeverStarted() && !t.task.IsDone && !t.task.IsPaused
+}
+
+// IsPaused returns true iff this task is currently paused.
+func (t *Task) IsPaused() bool {
+	return !t.IsNeverStarted() && !t.task.IsDone && t.task.IsPaused
 }
 
 // IsDone returns true iff this task is currently done.
@@ -189,6 +194,11 @@ func (t *Task) StartedAt() time.Time {
 	return t.task.StartedAt
 }
 
+// PausedAt returns the most recent time at which this task was paused.
+func (t *Task) PausedAt() time.Time {
+	return t.task.PausedAt
+}
+
 // DoneAt returns the most recent time at which this task was marked done.
 func (t *Task) DoneAt() time.Time {
 	return t.task.DoneAt
@@ -207,6 +217,8 @@ func (t *Task) status() (taskStatus, time.Time) {
 		return taskStatusDeleted, t.DeletedAt()
 	case t.IsDone():
 		return taskStatusDone, t.DoneAt()
+	case t.IsPaused():
+		return taskStatusPaused, t.PausedAt()
 	case t.IsStarted():
 		return taskStatusStarted, t.StartedAt()
 	case t.IsEstimated():
@@ -215,14 +227,16 @@ func (t *Task) status() (taskStatus, time.Time) {
 	return taskStatusUnestimated, t.CreatedAt()
 }
 
-// task doesn't actually have a field taskStatus, because taskStatus is a projection
-// of orthogonal state into one dimension. It helps explain task state to humans.
+// taskStatus is transient: task doesn't actually have a field
+// taskStatus, because taskStatus is a projection of orthogonal
+// state into one dimension. It helps explain task state to humans.
 type taskStatus int
 
 const (
 	taskStatusDeleted = iota
 	taskStatusDone
 	taskStatusEstimated
+	taskStatusPaused
 	taskStatusStarted
 	taskStatusUnestimated
 )
@@ -245,7 +259,11 @@ func RenderTaskOneLineSummary(t *Task, includeHeaders bool) string {
 			status = fmt.Sprintf("done in %.1fh on %d/%d", t.Actual().Hours(), month, day)
 		}
 	case taskStatusStarted:
-		status = fmt.Sprintf("%sstarted%s on %d/%d", ansiBold+ansiBoldYellow, ansiReset, month, day)
+		// right padding is to align table because "started" is a shorter word
+		status = fmt.Sprintf("%sstarted%s on %d/%d   ", ansiBold+ansiBoldYellow, ansiReset, month, day)
+	case taskStatusPaused:
+		// right padding is to align table because "paused" is a shorter word
+		status = fmt.Sprintf("%spaused%s on %d/%d   ", ansiBold+ansiBoldMagenta, ansiReset, month, day)
 	case taskStatusEstimated:
 		status = fmt.Sprintf("estimated on %d/%d", month, day)
 	default:
@@ -273,7 +291,8 @@ type task struct {
 	Events          []event       // event log to show history to humans  TODO generate event log
 	Estimated       time.Duration // estimated duration for this task (as estimated by a human)
 	Actual          time.Duration // actual duration spent on this task
-	ActualUpdatedAt time.Time     // ActualUpdatedAt is last time this task had time logged. This task was never stared iff ActualUpdatedAt is zero.
+	ActualUpdatedAt time.Time     // ActualUpdatedAt is last time this task had time logged. This task was never started iff ActualUpdatedAt is zero.
+	IsPaused        bool          // if ActualUpdatedAt is zero or IsDone is true, IsPaused is undefined. Otherwise, this task is paused iff IsPaused.
 	IsDone          bool          // if ActualUpdatedAt is zero, IsDone is undefined. Otherwise, this task is done if IsDone else this task is started.
 	IsDeleted       bool          // this task is deleted iff IsDeleted; orthogonal to other task state.
 
@@ -283,6 +302,7 @@ type task struct {
 	CreatedAt   time.Time
 	EstimatedAt time.Time
 	StartedAt   time.Time
+	PausedAt    time.Time
 	DoneAt      time.Time
 	DeletedAt   time.Time
 }
@@ -334,7 +354,31 @@ func (ts tasks) Start(wt worktimes.WorkTimes, i int, now time.Time) error {
 	autoAddActual(wt, ts.IsStarted().IsNotDeleted(), now) // IsNotDeleted is sanity because we expect started tasks to never be deleted
 	t.task.ActualUpdatedAt = now
 	t.task.StartedAt = now
+	t.task.IsPaused = false
 	t.task.IsDone = false
+
+	return nil
+}
+
+// Pause the ith task of tasks. See note on Start().
+func (ts tasks) Pause(wt worktimes.WorkTimes, i int, now time.Time) error {
+	t := ts[i]
+	if !t.IsStarted() {
+		return errors.New("cannot pause a task which isn't started")
+	}
+	if t.IsDeleted() {
+		// We don't allow starting deleted tasks or deleting a started task, and so never expect a started task to be deleted.
+		panic("expected started to be not deleted")
+	}
+
+	// Auto track time against current tasks in progress. This must
+	// be done prior to pausing i'th task, because shared
+	// passage of time for current started tasks must include this
+	// previously started task (so all started tasks tick together).
+	autoAddActual(wt, ts.IsStarted().IsNotDeleted(), now) // IsNotDeleted is sanity because we expect started tasks to never be deleted
+	// We don't set t.ActualUpdatedAt because it's been set inside autoAddActual() XOR ActualUpdatedAt is in the future and shouldn't be overwritten.
+	t.task.PausedAt = now
+	t.task.IsPaused = true
 
 	return nil
 }
@@ -357,6 +401,7 @@ func (ts tasks) Done(wt worktimes.WorkTimes, i int, now time.Time) error {
 	autoAddActual(wt, ts.IsStarted().IsNotDeleted(), now) // IsNotDeleted is sanity because we expect started tasks to never be deleted
 	// We don't set t.ActualUpdatedAt because it's been set inside autoAddActual() XOR ActualUpdatedAt is in the future and shouldn't be overwritten.
 	t.task.DoneAt = now
+	t.task.IsPaused = false
 	t.task.IsDone = true
 
 	return nil

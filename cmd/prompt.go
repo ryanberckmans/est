@@ -24,7 +24,7 @@ $(est-prompt 2> /dev/null)
 // promptCmd represents the prompt command
 var promptCmd = &cobra.Command{
 	Use:   "prompt",
-	Short: "Integrate est into your bash prompt",
+	Short: "Show how to integrate est into your bash prompt",
 	Long:  promptHelpMsg,
 	Run: func(cmd *cobra.Command, args []string) {
 		os.Stdout.WriteString(promptHelpMsg)
