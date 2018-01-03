@@ -89,6 +89,11 @@ Examples:
 			ef.Tasks = append(ef.Tasks, t)
 			if addCmdStartNow {
 				startTime := applyFlagAgo(time.Now())
+				if err := doFlagMultiple(ef, globalWorkTimes, startTime); err != nil {
+					fmt.Printf("fatal: %v\n", err)
+					os.Exit(1)
+					return
+				}
 				if err := ef.Tasks.Start(globalWorkTimes, len(ef.Tasks)-1, startTime); err != nil {
 					fmt.Printf("fatal: %v\n", err)
 					os.Exit(1)
@@ -123,6 +128,7 @@ func looksLikeIDPrefix(s string) bool {
 var addCmdStartNow bool
 
 func init() {
+	addCmd.PersistentFlags().BoolVarP(&flagMultiple, "multiple", "m", false, "allow multiple started tasks")
 	addCmd.PersistentFlags().StringVarP(&flagLog, "log", "l", "", "log time worked after starting this new task")
 	addCmd.PersistentFlags().StringVarP(&flagEstimate, "estimate", "e", "", "estimate new task")
 	addCmd.PersistentFlags().StringVarP(&flagAgo, "ago", "a", "", "when used with start, start duration ago from now")

@@ -68,6 +68,11 @@ Examples:
 				}
 			}
 			startTime := applyFlagAgo(time.Now())
+			if err := doFlagMultiple(ef, globalWorkTimes, startTime); err != nil {
+				fmt.Printf("fatal: %v\n", err)
+				os.Exit(1)
+				return
+			}
 			if err := ef.Tasks.Start(globalWorkTimes, i, startTime); err != nil {
 				fmt.Printf("fatal: %v\n", err)
 				os.Exit(1)
@@ -88,6 +93,7 @@ Examples:
 }
 
 func init() {
+	startCmd.PersistentFlags().BoolVarP(&flagMultiple, "multiple", "m", false, "allow multiple started tasks")
 	startCmd.PersistentFlags().StringVarP(&flagEstimate, "estimate", "e", "", "estimate this task before starting")
 	startCmd.PersistentFlags().StringVarP(&flagLog, "log", "l", "", "log time worked after starting this task")
 	startCmd.PersistentFlags().StringVarP(&flagAgo, "ago", "a", "", "start duration ago from now")
