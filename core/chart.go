@@ -135,15 +135,16 @@ func makeAccuracyRatioChart(ars []AccuracyRatio, now time.Time) *chart.Chart {
 		if ratio < 1 {
 			ratio = 1.0 / ratio
 		}
+		var alpha uint8 = 128
 		switch {
 		case ratio < 1.2:
-			return drawing.ColorGreen
+			return drawing.Color{R: 0, G: 255, B: 0, A: alpha}
 		case ratio < 1.4:
-			return drawing.Color{R: 255, G: 255, B: 0, A: 255} // yellow
+			return drawing.Color{R: 0, G: 0, B: 255, A: alpha}
 		case ratio < 2.0:
-			return drawing.Color{R: 255, G: 140, B: 0, A: 255} // orange
+			return drawing.Color{R: 255, G: 140, B: 0, A: alpha} // orange
 		}
-		return drawing.ColorRed
+		return drawing.Color{R: 255, G: 0, B: 0, A: alpha}
 	}
 	dwFunc := func(xrange, yrange chart.Range, index int, x, y float64) float64 {
 		return dws[index]
