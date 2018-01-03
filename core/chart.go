@@ -119,7 +119,7 @@ func makeAccuracyRatioChart(ars []AccuracyRatio, now time.Time) *chart.Chart {
 		}
 		ys[i] = ars[i].ratio
 		h := ars[i].duration.Hours()
-		baseDiameter := 2.0
+		baseDiameter := 3.0
 		var w float64
 		switch {
 		case h <= 1:

@@ -21,7 +21,9 @@ est add <task name>
 
 The new task name is the concatenation of all non-flag args, no quotes required.
 An estimate can be provided with -e, otherwise the new task will be unestimated.
+
 If an estimate was provided, the new task can be immediately started with -s.
+Multiple tasks can be started concurrently, see 'est help start'.
 
 Estimates can be provided in minutes "30m" or hours "3.5h". Estimates cannot be
 provided in days or weeks, because est's auto time tracking uses customizable
@@ -48,6 +50,10 @@ Examples:
 
   # Add an estimated task and start it as of one hour ago.
   est a -e 4h -s -a 1h "this is a four hour task I started an hour ago"
+
+  # Add and start an estimated task such that multiple tasks are now started.
+  est a -e 1h -sm multiple tasks started if another was already started
+
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		name := strings.TrimSpace(strings.Join(args, " "))
@@ -89,6 +95,11 @@ Examples:
 			ef.Tasks = append(ef.Tasks, t)
 			if addCmdStartNow {
 				startTime := applyFlagAgo(time.Now())
+				if err := doFlagMultiple(ef, globalWorkTimes, startTime); err != nil {
+					fmt.Printf("fatal: %v\n", err)
+					os.Exit(1)
+					return
+				}
 				if err := ef.Tasks.Start(globalWorkTimes, len(ef.Tasks)-1, startTime); err != nil {
 					fmt.Printf("fatal: %v\n", err)
 					os.Exit(1)
@@ -123,6 +134,7 @@ func looksLikeIDPrefix(s string) bool {
 var addCmdStartNow bool
 
 func init() {
+	addCmd.PersistentFlags().BoolVarP(&flagMultiple, "multiple", "m", false, "allow multiple started tasks")
 	addCmd.PersistentFlags().StringVarP(&flagLog, "log", "l", "", "log time worked after starting this new task")
 	addCmd.PersistentFlags().StringVarP(&flagEstimate, "estimate", "e", "", "estimate new task")
 	addCmd.PersistentFlags().StringVarP(&flagAgo, "ago", "a", "", "when used with start, start duration ago from now")

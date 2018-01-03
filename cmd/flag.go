@@ -9,11 +9,36 @@ import (
 	"time"
 
 	"github.com/ryanberckmans/est/core"
+	"github.com/ryanberckmans/est/core/worktimes"
 )
 
 var flagLog string      // duration of logged time e.g. "30m"
 var flagEstimate string // duration estimate e.g. "2.5h"
 var flagAgo string      // duration ago e.g. "0.5d"
+var flagMultiple bool   // user wants multiple tasks started vs. auto pausing any task in progress.
+
+// doFlagMultiple assumes that one task is about to be started and enforces
+// the semantics of pausing a task in progress or determining if a task
+// can legally be started. doFlagMultiple will cause the passed EstFile to
+// become inconsistent if a task isn't started after returning nil error.
+func doFlagMultiple(ef *core.EstFile, wt worktimes.WorkTimes, now time.Time) error {
+	if flagMultiple {
+		// multiple tasks may be started and no started task (if any) will be paused
+		return nil
+	}
+	started := ef.Tasks.IsStarted().IsNotDeleted()
+	if len(started) == 1 {
+		// multiple disallowed and one task started, pause this task
+		i := ef.Tasks.FindByIDPrefix(started[0].ID().String())
+		if i < 0 {
+			panic(fmt.Sprintf("expected to find task with ID %v", started[0].ID()))
+		}
+		return ef.Tasks.Pause(wt, i, now)
+	} else if len(started) > 1 {
+		return errors.New("cannot start task without --multiple because multiple tasks are currently started")
+	}
+	return nil
+}
 
 func doFlagLog(t *core.Task, now time.Time) {
 	if flagLog != "" && flagAgo != "" {
@@ -31,8 +56,8 @@ func doFlagLog(t *core.Task, now time.Time) {
 		os.Exit(1)
 		return
 	}
-	if !t.IsStarted() {
-		fmt.Print("fatal: cannot log time worked on unstarted task\n")
+	if !t.IsStarted() && !t.IsPaused() {
+		fmt.Print("fatal: cannot log time on a task which isn't started or paused\n")
 		os.Exit(1)
 		return
 	}

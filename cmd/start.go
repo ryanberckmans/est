@@ -28,6 +28,13 @@ estimate command.
 An estimate can be provided with -e, otherwise the task must already be
 estimated to be started.
 
+Multiple tasks can be started concurrently with -m, otherwise any current task
+will be paused when starting a new task. See 'est help done' for an explanation
+of how time is automatically tracked with multiple started tasks.
+
+Tasks cannot be paused directly. Paused tasks can be restarted, marked done,
+deleted, or have time tracked using 'est log'.
+
 Examples:
   # Start the task with ID prefix "3c".
   est s 3c
@@ -40,6 +47,9 @@ Examples:
 
   # Estimate at thirty minutes and start the task with ID prefix "f6c".
   est s -e 30m f6c
+
+  # Start the task with ID prefix "8a" such that multiple tasks are now started.
+  est s -m 8a
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
@@ -68,6 +78,11 @@ Examples:
 				}
 			}
 			startTime := applyFlagAgo(time.Now())
+			if err := doFlagMultiple(ef, globalWorkTimes, startTime); err != nil {
+				fmt.Printf("fatal: %v\n", err)
+				os.Exit(1)
+				return
+			}
 			if err := ef.Tasks.Start(globalWorkTimes, i, startTime); err != nil {
 				fmt.Printf("fatal: %v\n", err)
 				os.Exit(1)
@@ -88,6 +103,7 @@ Examples:
 }
 
 func init() {
+	startCmd.PersistentFlags().BoolVarP(&flagMultiple, "multiple", "m", false, "allow multiple started tasks")
 	startCmd.PersistentFlags().StringVarP(&flagEstimate, "estimate", "e", "", "estimate this task before starting")
 	startCmd.PersistentFlags().StringVarP(&flagLog, "log", "l", "", "log time worked after starting this task")
 	startCmd.PersistentFlags().StringVarP(&flagAgo, "ago", "a", "", "start duration ago from now")
