@@ -135,7 +135,7 @@ func (t *Task) Estimated() time.Duration {
 // SetEstimated sets this task's estimated duration.
 func (t *Task) SetEstimated(d time.Duration) error {
 	if !t.IsNeverStarted() {
-		return errors.New("cannot re-estimate a task which has been started; the idea is to get better at up-front estimation")
+		return errors.New("cannot re-estimate a task which has been started")
 	}
 	t.task.Estimated = d
 	t.task.EstimatedAt = time.Now()

@@ -205,3 +205,25 @@ func startOfDay(t time.Time) time.Time {
 func endOfDay(t time.Time) time.Time {
 	return startOfDay(t.AddDate(0, 0, 1)).Add(-time.Nanosecond)
 }
+
+// GetAnonymousWorkTimes is a convenience function for downstream testing.
+func GetAnonymousWorkTimes() WorkTimes {
+	wt, err := New(map[time.Weekday]bool{
+		time.Monday:    true,
+		time.Tuesday:   true,
+		time.Wednesday: true,
+		time.Thursday:  true,
+		time.Friday:    true,
+	}, []string{
+		// Work 9:30am-noon
+		"9:30am",
+		"12:00pm",
+		// 30 minutes for lunch, then work 12:30pm-5:30pm
+		"12:30pm",
+		"5:30pm",
+	})
+	if err != nil {
+		panic(err)
+	}
+	return wt
+}
