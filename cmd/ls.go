@@ -19,7 +19,13 @@ var lsCmd = &cobra.Command{
 
 func doLS() {
 	core.WithEstConfigAndFile(func(ec *core.EstConfig, ef *core.EstFile) {
-		ts := ef.Tasks.SortByStatusDescending().IsNotDeleted()
+		ts := ef.Tasks.SortByStatusDescending()
+		if !lsFlagDeleted {
+			ts = ts.IsNotDeleted()
+		}
+		if !lsFlagDone {
+			ts = ts.IsNotDone()
+		}
 		rs := make([]string, len(ts)+1) // +1 causes the last element to be empty string, which causes the Join to add an extra newline
 		for i := range ts {
 			rs[i] = core.RenderTaskOneLineSummary(ts[i], i == 0)
@@ -31,8 +37,11 @@ func doLS() {
 	})
 }
 
+var lsFlagDone bool    // show done tasks
+var lsFlagDeleted bool // show deleted tasks
+
 func init() {
-	// TODO --done to show done tasks, default to not showing done
-	// TODO --deleted to show deleted tasks, default does not show deleted
+	lsCmd.PersistentFlags().BoolVarP(&lsFlagDone, "done", "d", false, "show done tasks")
+	lsCmd.PersistentFlags().BoolVarP(&lsFlagDeleted, "deleted", "D", false, "show deleted tasks")
 	rootCmd.AddCommand(lsCmd)
 }

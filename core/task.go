@@ -249,7 +249,8 @@ func RenderTaskOneLineSummary(t *Task, includeHeaders bool) string {
 	_, month, day := statusTime.Date()
 	switch statusCode {
 	case taskStatusDeleted:
-		status = fmt.Sprintf("%sdeleted%s on %d/%d", ansiBold+ansiBoldRed, ansiReset, month, day)
+		// right padding is to align table because "deleted" is a shorter word
+		status = fmt.Sprintf("%sdeleted%s on %d/%d   ", ansiBold+ansiBoldRed, ansiReset, month, day)
 	case taskStatusDone:
 		if t.Actual() < time.Minute {
 			status = fmt.Sprintf("done in %.1fs on %d/%d", t.Actual().Seconds(), month, day)
