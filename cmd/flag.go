@@ -56,8 +56,8 @@ func doFlagLog(t *core.Task, now time.Time) {
 		os.Exit(1)
 		return
 	}
-	if !t.IsStarted() && !t.IsPaused() {
-		fmt.Print("fatal: cannot log time on a task which isn't started or paused\n")
+	if !t.IsStarted() && !t.IsPaused() && !t.IsDone() {
+		fmt.Print("fatal: to track time, task must be started, paused, or done\n")
 		os.Exit(1)
 		return
 	}
