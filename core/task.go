@@ -56,7 +56,7 @@ func (t *Task) Name() string {
 	return t.task.Name
 }
 
-const taskNameMaxLen = 80
+const taskNameMaxLen = 120
 
 // SetName sets this task's name.
 func (t *Task) SetName(n string) error {
