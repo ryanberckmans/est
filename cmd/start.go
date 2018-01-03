@@ -28,6 +28,13 @@ estimate command.
 An estimate can be provided with -e, otherwise the task must already be
 estimated to be started.
 
+Multiple tasks can be started concurrently with -m, otherwise any current task
+will be paused when starting a new task. See 'est help done' for an explanation
+of how time is automatically tracked with multiple started tasks.
+
+Tasks cannot be paused directly. Paused tasks can be restarted, marked done,
+deleted, or have time tracked using 'est log'.
+
 Examples:
   # Start the task with ID prefix "3c".
   est s 3c
@@ -40,6 +47,9 @@ Examples:
 
   # Estimate at thirty minutes and start the task with ID prefix "f6c".
   est s -e 30m f6c
+
+  # Start the task with ID prefix "8a" such that multiple tasks are now started.
+  est s -m 8a
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
