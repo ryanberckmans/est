@@ -49,11 +49,7 @@ func promptColor(s string) string {
 }
 
 func promptOneTask(t *core.Task) string {
-	s := getTaskNameForPrompt(t)
-	if len(s) > 22 {
-		return s[:22]
-	}
-	return fmt.Sprintf("%-22s", s)
+	return stringsShortForm(5, 22, strings.Fields(getTaskNameForPrompt(t)))
 }
 
 func promptTwoTasks(t *core.Task, t2 *core.Task) string {
