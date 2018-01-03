@@ -63,8 +63,8 @@ func (wt *workTimes) DurationBetween(start, end time.Time) time.Duration {
 			return d + durationBetweenOnSameDay(wt, s2, end)
 		}
 		// fmt.Printf("not on same day same day s2=%v end=%v\n", s2, end)
-		d += durationBetweenOnSameDay(wt, s2, endOfDay(s2))
-		s2 = startOfDay(s2.AddDate(0, 0, 1))
+		d += durationBetweenOnSameDay(wt, s2, EndOfDay(s2))
+		s2 = StartOfDay(s2.AddDate(0, 0, 1))
 	}
 }
 
@@ -197,13 +197,13 @@ func durationBetweenOnSameDay(wt WorkTimes, start, end time.Time) time.Duration 
 }
 
 // Return start of day for passed time in the passed time's location.
-func startOfDay(t time.Time) time.Time {
+func StartOfDay(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 }
 
 // Return end of day for passed time in the passed time's location.
-func endOfDay(t time.Time) time.Time {
-	return startOfDay(t.AddDate(0, 0, 1)).Add(-time.Nanosecond)
+func EndOfDay(t time.Time) time.Time {
+	return StartOfDay(t.AddDate(0, 0, 1)).Add(-time.Nanosecond)
 }
 
 // GetAnonymousWorkTimes is a convenience function for downstream testing.

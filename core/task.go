@@ -241,6 +241,34 @@ const (
 	taskStatusUnestimated
 )
 
+// RenderYesterdayTasks returns a user-suitable summary of task activity on
+// first business day prior to now.
+func RenderYesterdayTasks(wt worktimes.WorkTimes, ts tasks, now time.Time) string {
+	for {
+		// Find previous business day by searching for first day in past
+		// with some worktimes. Will never terminate if wt has no worktimes.
+		now = now.Add(-time.Hour * 24)
+		if len(wt.GetWorkTimesOnDay(now)) > 0 {
+			break
+		}
+	}
+	start := worktimes.StartOfDay(now)
+	end := worktimes.EndOfDay(now)
+	var ts2 tasks
+	for _, t := range ts {
+		_, taskTime := t.status()
+		if t.IsStarted() || taskTime.After(start) && taskTime.Before(end) {
+			ts2 = append(ts2, t)
+		}
+	}
+	rs := make([]string, len(ts2)+2) // +1 causes the last element to be empty string, which causes the Join to add an extra newline
+	rs[0] = "Activity on " + now.Format("Monday, January 2, 2006")
+	for i := range ts2 {
+		rs[i+1] = RenderTaskOneLineSummary(ts2[i], i == 0)
+	}
+	return strings.Join(rs, "\n")
+}
+
 // RenderTaskOneLineSummary returns a string rendering of passed task
 // suitable to be included in a one-task-per-line output to user.
 func RenderTaskOneLineSummary(t *Task, includeHeaders bool) string {
