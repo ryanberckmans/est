@@ -1,3 +1,5 @@
+# [Screenshots](https://imgur.com/a/cUZiYf1)
+
 # Quickstart
 
 1. Install `est`
